@@ -1,0 +1,82 @@
+{
+  "items": [
+    { "id": "TERMINATOR", "name": "Terminator", "rarity": "MYTHIC", "isBazaar": false },
+    { "id": "JUDGEMENT_CORE", "name": "Judgement Core", "rarity": "LEGENDARY", "isBazaar": false, "manualPrice": 500000000 },
+    { "id": "NULL_BLADE", "name": "Null Blade", "rarity": "RARE", "isBazaar": false },
+    { "id": "NULL_SPHERE", "name": "Null Sphere", "rarity": "UNCOMMON", "isBazaar": true },
+    { "id": "ENCHANTED_STRING", "name": "Enchanted String", "rarity": "UNCOMMON", "isBazaar": true },
+    { "id": "BRAIDED_GRIFFIN_FEATHER", "name": "Braided Griffin Feather", "rarity": "EPIC", "isBazaar": false },
+    { "id": "GRIFFIN_FEATHER", "name": "Griffin Feather", "rarity": "UNCOMMON", "isBazaar": true },
+    { "id": "ENCHANTED_GOLD_BLOCK", "name": "Enchanted Gold Block", "rarity": "RARE", "isBazaar": true },
+    { "id": "TESSELLATED_ENDER_PEARL", "name": "Tessellated Ender Pearl", "rarity": "EPIC", "isBazaar": false },
+    { "id": "ENCHANTED_ENDER_PEARL", "name": "Enchanted Ender Pearl", "rarity": "UNCOMMON", "isBazaar": true },
+    { "id": "TARANTULA_SILK", "name": "Tarantula Silk", "rarity": "EPIC", "isBazaar": true },
+    { "id": "WARDEN_HELMET", "name": "Warden Helmet", "rarity": "LEGENDARY", "isBazaar": false },
+    { "id": "WARDEN_HEART", "name": "Warden Heart", "rarity": "LEGENDARY", "isBazaar": false, "manualPrice": 220000000 },
+    { "id": "REVIVED_HEART", "name": "Revived Heart", "rarity": "EPIC", "isBazaar": false },
+    { "id": "REVENANT_VISCERA", "name": "Revenant Viscera", "rarity": "RARE", "isBazaar": true },
+    { "id": "ENCHANTED_DIAMOND_BLOCK", "name": "Enchanted Diamond Block", "rarity": "RARE", "isBazaar": true },
+    { "id": "ZOMBIE_HEART", "name": "Zombie Heart", "rarity": "RARE", "isBazaar": false },
+    { "id": "ENCHANTED_ROTTEN_FLESH", "name": "Enchanted Rotten Flesh", "rarity": "UNCOMMON", "isBazaar": true }
+  ],
+  "recipes": [
+    {
+      "id": "TERMINATOR",
+      "outputAmount": 1,
+      "ingredients": [
+        { "id": "JUDGEMENT_CORE", "amount": 1 },
+        { "id": "NULL_BLADE", "amount": 3 },
+        { "id": "BRAIDED_GRIFFIN_FEATHER", "amount": 4 },
+        { "id": "TESSELLATED_ENDER_PEARL", "amount": 8 },
+        { "id": "TARANTULA_SILK", "amount": 128 }
+      ]
+    },
+    {
+      "id": "NULL_BLADE",
+      "outputAmount": 1,
+      "ingredients": [
+        { "id": "NULL_SPHERE", "amount": 128 },
+        { "id": "ENCHANTED_STRING", "amount": 128 }
+      ]
+    },
+    {
+      "id": "BRAIDED_GRIFFIN_FEATHER",
+      "outputAmount": 1,
+      "ingredients": [
+        { "id": "GRIFFIN_FEATHER", "amount": 1 },
+        { "id": "ENCHANTED_GOLD_BLOCK", "amount": 1 }
+      ]
+    },
+    {
+      "id": "TESSELLATED_ENDER_PEARL",
+      "outputAmount": 1,
+      "ingredients": [
+        { "id": "ENCHANTED_ENDER_PEARL", "amount": 80 }
+      ]
+    },
+    {
+      "id": "WARDEN_HELMET",
+      "outputAmount": 1,
+      "ingredients": [
+        { "id": "WARDEN_HEART", "amount": 1 },
+        { "id": "REVIVED_HEART", "amount": 1 }
+      ]
+    },
+    {
+      "id": "REVIVED_HEART",
+      "outputAmount": 1,
+      "ingredients": [
+        { "id": "ZOMBIE_HEART", "amount": 1 },
+        { "id": "ENCHANTED_DIAMOND_BLOCK", "amount": 1 },
+        { "id": "REVENANT_VISCERA", "amount": 32 }
+      ]
+    },
+    {
+      "id": "ZOMBIE_HEART",
+      "outputAmount": 1,
+      "ingredients": [
+        { "id": "ENCHANTED_ROTTEN_FLESH", "amount": 256 }
+      ]
+    }
+  ]
+}
