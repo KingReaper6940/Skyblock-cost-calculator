@@ -17,22 +17,26 @@ export interface BazaarResponse {
   products: Record<string, BazaarProduct>;
 }
 
+import https from 'https';
+
 export async function getBazaarData(): Promise<BazaarResponse | null> {
-  try {
-    const res = await fetch('https://api.hypixel.net/skyblock/bazaar', {
-      cache: 'no-store',
+  return new Promise((resolve) => {
+    https.get('https://api.hypixel.net/skyblock/bazaar', (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          resolve(JSON.parse(data));
+        } catch (e) {
+          console.error("Parse error", e);
+          resolve(null);
+        }
+      });
+    }).on('error', (e) => {
+      console.error("Fetch error", e);
+      resolve(null);
     });
-    
-    if (!res.ok) {
-      console.error('Failed to fetch Bazaar data', res.status);
-      return null;
-    }
-    
-    return await res.json();
-  } catch (err) {
-    console.error('Error fetching Bazaar data', err);
-    return null;
-  }
+  });
 }
 
 export async function getBazaarPrice(itemId: string): Promise<number | null> {
