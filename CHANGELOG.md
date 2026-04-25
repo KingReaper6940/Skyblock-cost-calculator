@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.6 - 2026-04-25
+
+Recipe-loading reliability release.
+
+- load the local SkyBlock repo cache immediately at startup as the structured baseline
+- added a real `rei_client` plugin so CraftCost imports REI recipes after REI finishes its `END` reload stage
+- removed the old tick-based REI polling path
+- keeps hover-time REI retry only as a late catch-up path for missing items
+
 ## 1.0.5 - 2026-04-25
 
 API pacing hotfix.

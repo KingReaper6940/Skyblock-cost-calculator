@@ -18,6 +18,9 @@
         ],
         "main": [
             "com.craftcost.CraftCostMod"
+        ],
+        "rei_client": [
+            "com.craftcost.compat.CraftCostReiPlugin"
         ]
     },
     "mixins": [],

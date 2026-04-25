@@ -12,16 +12,17 @@ the youtube video ; https://youtu.be/9MPIsVMRJKM
 When you hover a SkyBlock item for long enough, the mod:
 
 1. identifies the SkyBlock item ID from its NBT,
-2. reads recipe data from REI's loaded recipe displays,
-3. fetches current price data from SkyCofl / Coflnet,
-4. prices the immediate recipe ingredients using their market prices,
-5. shows the result directly in the tooltip.
+2. loads the local SkyBlock repo cache immediately when available,
+3. augments that recipe data from REI after REI finishes its client reload,
+4. fetches current price data from SkyCofl / Coflnet,
+5. prices the immediate recipe ingredients using their market prices,
+6. shows the result directly in the tooltip.
 
 The tooltip is intentionally conservative so it does not hammer your game or the pricing API during normal browsing.
 
 ## Current behavior
 
-As of `craftcost 1.0.5`, the tooltip flow works like this:
+As of `craftcost 1.0.6`, the tooltip flow works like this:
 
 - No price checks happen immediately when you glance over an item.
 - You must hold the same SkyBlock item for 10 seconds before calculation starts.
@@ -39,16 +40,14 @@ Direct craft cost means CraftCost prices only one layer of ingredients. If an in
 
 ## How recipe loading works
 
-CraftCost is back to REI-first recipe loading.
-
-That is intentional. REI already receives the recipe displays from the SkyBlock mods in your profile, so using REI means CraftCost reads the same item stacks and SkyBlock IDs that you are actually seeing in-game. That is more reliable than shipping our own frozen recipe copy.
+CraftCost now uses a hybrid recipe flow.
 
 Startup recipe source order:
 
-1. REI recipe displays
-2. local `skyblock-repo-cache/recipes.min.json`, only if REI exposes no recipes after repeated startup attempts
+1. local `skyblock-repo-cache/recipes.min.json` as the structured baseline
+2. REI recipe displays after REI finishes its `END` reload stage
 
-The local repo fallback is a safety net, not the normal path. CraftCost no longer ships a bundled recipe snapshot inside the jar.
+This is more reliable than REI-only polling and more flexible than a frozen bundled snapshot. The local cache gives us stable structured data immediately, and REI can still contribute live client-side displays after its plugin reload completes.
 
 ## How price loading works
 
@@ -109,7 +108,7 @@ mod/build/libs/
 The current version in source is:
 
 ```text
-craftcost-1.0.5
+craftcost-1.0.6
 ```
 
 ## Installing the mod
@@ -187,12 +186,23 @@ If the mod's tooltip flow, recipe sources, compatibility target, config format, 
 
 ## Recipe sources
 
-CraftCost now uses an in-game-source-first order for recipes:
+CraftCost now uses a hybrid recipe-source order:
 
-1. REI recipe displays
-2. the user's local `skyblock-repo-cache/recipes.min.json`, only if REI never produces recipes
+1. the user's local `skyblock-repo-cache/recipes.min.json`
+2. REI recipe displays after REI finishes reloading
 
-This keeps recipe IDs tied to the actual item stacks in the running client. It also removes the stale bundled snapshot that caused wrong or confusing item IDs.
+This gives the mod a reliable structured baseline without depending on REI timing, while still letting REI add live recipe displays once its client reload is complete.
+
+## Release 1.0.6
+
+`1.0.6` is a recipe-loading reliability release.
+
+Main release points:
+
+- loads the local repo cache immediately at startup
+- imports REI recipes through a real `rei_client` plugin at `END` reload stage
+- removes the old tick-polling REI startup path
+- keeps a small hover-time REI retry for late-arriving missing items
 
 ## Release 1.0.5
 

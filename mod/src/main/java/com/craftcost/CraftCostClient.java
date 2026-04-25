@@ -11,16 +11,13 @@ import com.craftcost.data.RepoRecipeLoader;
 import com.craftcost.tooltip.TooltipHandler;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 
 /**
- * Client-side mod initializer — sets up the pricing pipeline and tooltip hooks.
+ * Client-side mod initializer - sets up the pricing pipeline and tooltip hooks.
  */
 public class CraftCostClient implements ClientModInitializer {
 
     private static final long REI_FALLBACK_COOLDOWN_MS = 10_000L;
-    private static final int REI_RETRY_INTERVAL_TICKS = 20;
-    private static final int REI_MAX_LOAD_ATTEMPTS = 45;
 
     private static CraftCostClient instance;
 
@@ -34,33 +31,25 @@ public class CraftCostClient implements ClientModInitializer {
     private REICompat reiCompat;
     private RepoRecipeLoader repoRecipeLoader;
     private long lastFallbackRecipeLoadAt;
-    private int recipeLoadTicks;
-    private int recipeLoadAttempts;
-    private boolean localRepoFallbackLoaded;
+    private boolean localRepoRecipesLoaded;
 
     @Override
     public void onInitializeClient() {
         instance = this;
 
-        // load config
         config = CraftCostConfig.load();
 
-        // init API client + caches
         coflnetClient = new CoflnetClient();
         priceCache = new PriceCache();
         recipeCache = new RecipeCache();
-
-        // init pricing engine
         craftCostEngine = new CraftCostEngine(priceCache, recipeCache);
 
-        // start background price fetcher
         priceFetcher = new PriceFetcher(coflnetClient, priceCache, config, craftCostEngine);
         priceFetcher.start();
 
         repoRecipeLoader = new RepoRecipeLoader();
+        loadLocalRepoRecipes();
         reiCompat = new REICompat(recipeCache);
-
-        ClientTickEvents.END_CLIENT_TICK.register(client -> loadRecipesFromReiWhenReady());
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             if (priceFetcher != null) {
@@ -68,11 +57,10 @@ public class CraftCostClient implements ClientModInitializer {
             }
         });
 
-        // hook into tooltips
         tooltipHandler = new TooltipHandler(priceCache, craftCostEngine, recipeCache, priceFetcher, config);
         tooltipHandler.register();
 
-        CraftCostMod.LOGGER.info("[CraftCost] Client initialized — tooltip overlay active");
+        CraftCostMod.LOGGER.info("[CraftCost] Client initialized - tooltip overlay active");
     }
 
     public static CraftCostClient getInstance() {
@@ -95,29 +83,14 @@ public class CraftCostClient implements ClientModInitializer {
         return coflnetClient;
     }
 
-    private void loadRecipesFromReiWhenReady() {
-        if (recipeCache.size() > 0 || reiCompat == null) {
+    public void onReiReloadFinished() {
+        if (reiCompat == null) {
             return;
         }
 
-        recipeLoadTicks++;
-        if (recipeLoadTicks < REI_RETRY_INTERVAL_TICKS) {
-            return;
-        }
-
-        recipeLoadTicks = 0;
-        if (!REICompat.isLoaded()) {
-            return;
-        }
-
-        recipeLoadAttempts++;
-        if (reiCompat.loadRecipes() > 0) {
+        int loaded = reiCompat.loadRecipes();
+        if (loaded > 0) {
             craftCostEngine.invalidate();
-            return;
-        }
-
-        if (recipeLoadAttempts >= REI_MAX_LOAD_ATTEMPTS) {
-            loadLocalRepoFallback();
         }
     }
 
@@ -135,19 +108,16 @@ public class CraftCostClient implements ClientModInitializer {
         int loaded = reiCompat.loadRecipes();
         if (loaded > 0) {
             craftCostEngine.invalidate();
-        } else if (recipeCache.size() == 0) {
-            loadLocalRepoFallback();
         }
     }
 
-    private void loadLocalRepoFallback() {
-        if (localRepoFallbackLoaded || repoRecipeLoader == null) {
+    private void loadLocalRepoRecipes() {
+        if (localRepoRecipesLoaded || repoRecipeLoader == null) {
             return;
         }
 
-        localRepoFallbackLoaded = true;
-        int loaded = repoRecipeLoader.loadInto(recipeCache);
-        if (loaded > 0) {
+        localRepoRecipesLoaded = true;
+        if (repoRecipeLoader.loadInto(recipeCache) > 0) {
             craftCostEngine.invalidate();
         }
     }
