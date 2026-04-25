@@ -33,14 +33,14 @@ public class REICompat {
         }
     }
 
-    public void loadRecipes() {
+    public int loadRecipes() {
         if (permanentlyDisabled) {
-            return;
+            return 0;
         }
 
         if (!isLoaded()) {
             CraftCostMod.LOGGER.warn("[CraftCost] REI not found - recipe data unavailable");
-            return;
+            return 0;
         }
 
         CraftCostMod.LOGGER.info("[CraftCost] Loading recipes from REI...");
@@ -87,9 +87,11 @@ public class REICompat {
             }
 
             CraftCostMod.LOGGER.info("[CraftCost] Loaded {} recipes from REI", loaded);
+            return loaded;
         } catch (ReflectiveOperationException | RuntimeException e) {
             permanentlyDisabled = true;
             CraftCostMod.LOGGER.error("[CraftCost] Failed to load recipes from REI", e);
+            return 0;
         }
     }
 

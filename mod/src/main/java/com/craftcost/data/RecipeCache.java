@@ -2,6 +2,7 @@ package com.craftcost.data;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,6 +17,11 @@ public class RecipeCache {
     public void put(String itemTag, Recipe recipe) {
         cache.compute(itemTag, (key, recipes) -> {
             List<Recipe> next = recipes == null ? new ArrayList<>() : new ArrayList<>(recipes);
+            for (Recipe existing : next) {
+                if (existing.sameShape(recipe)) {
+                    return next;
+                }
+            }
             next.add(recipe);
             return next;
         });
@@ -46,6 +52,16 @@ public class RecipeCache {
     public Set<String> collectIngredientTags(String itemTag, int maxDepth) {
         Set<String> tags = ConcurrentHashMap.newKeySet();
         collectIngredientTags(itemTag, maxDepth, tags, ConcurrentHashMap.newKeySet());
+        return tags;
+    }
+
+    public Set<String> collectDirectIngredientTags(String itemTag) {
+        Set<String> tags = new LinkedHashSet<>();
+        for (Recipe recipe : getAll(itemTag)) {
+            for (Ingredient ingredient : recipe.getIngredients()) {
+                tags.add(ingredient.getItemTag());
+            }
+        }
         return tags;
     }
 
@@ -96,6 +112,23 @@ public class RecipeCache {
         public double getCoinCost() {
             return coinCost;
         }
+
+        public boolean sameShape(Recipe other) {
+            if (other == null
+                    || outputCount != other.outputCount
+                    || Double.compare(coinCost, other.coinCost) != 0
+                    || ingredients.size() != other.ingredients.size()) {
+                return false;
+            }
+
+            for (int i = 0; i < ingredients.size(); i++) {
+                if (!ingredients.get(i).sameValue(other.ingredients.get(i))) {
+                    return false;
+                }
+            }
+
+            return outputTag.equals(other.outputTag);
+        }
     }
 
     /**
@@ -116,6 +149,10 @@ public class RecipeCache {
 
         public int getCount() {
             return count;
+        }
+
+        public boolean sameValue(Ingredient other) {
+            return other != null && count == other.count && itemTag.equals(other.itemTag);
         }
     }
 }

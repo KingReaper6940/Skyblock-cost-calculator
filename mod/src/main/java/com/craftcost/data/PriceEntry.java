@@ -65,4 +65,10 @@ public class PriceEntry {
     public boolean isExpired(long ttlMillis) {
         return System.currentTimeMillis() - timestamp > ttlMillis;
     }
+
+    public boolean sameValues(long otherLowestBin, double otherBazaarBuyPrice, double otherBazaarSellPrice) {
+        return lowestBin == otherLowestBin
+                && Double.compare(bazaarBuyPrice, otherBazaarBuyPrice) == 0
+                && Double.compare(bazaarSellPrice, otherBazaarSellPrice) == 0;
+    }
 }

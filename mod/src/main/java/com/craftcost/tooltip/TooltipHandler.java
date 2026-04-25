@@ -1,5 +1,6 @@
 package com.craftcost.tooltip;
 
+import com.craftcost.CraftCostClient;
 import com.craftcost.api.PriceFetcher;
 import com.craftcost.config.CraftCostConfig;
 import com.craftcost.data.CraftCostEngine;
@@ -18,7 +19,6 @@ import java.util.List;
 public class TooltipHandler {
 
     private static final long HOLD_TO_CALCULATE_MS = 10_000L;
-    private static final int PRICE_TREE_DEPTH = 1;
     private static final String GRAY_RULE = "\u00A78\u00A7m                    \u00A7r";
 
     private final PriceCache priceCache;
@@ -27,6 +27,7 @@ public class TooltipHandler {
     private final PriceFetcher priceFetcher;
     private final CraftCostConfig config;
     private String hoveredItemId;
+    private String requestedItemId;
     private long hoverStartedAt;
 
     public TooltipHandler(PriceCache priceCache, CraftCostEngine craftCostEngine, RecipeCache recipeCache,
@@ -57,12 +58,16 @@ public class TooltipHandler {
                 return;
             }
 
-            priceFetcher.requestPriceTree(itemId, recipeCache, PRICE_TREE_DEPTH);
+            requestPricesForHover(itemId);
 
             PriceEntry price = priceCache.get(itemId);
             CraftCostEngine.CraftResult craft = craftCostEngine.calculate(itemId);
             boolean hasKnownRecipe = recipeCache.has(itemId);
             boolean craftTreeReady = !hasKnownRecipe || craftCostEngine.isFullyResolved(itemId);
+
+            if (!hasKnownRecipe && CraftCostClient.getInstance() != null) {
+                CraftCostClient.getInstance().requestRecipeFallbackLoad();
+            }
 
             if (hasKnownRecipe && (!craftTreeReady || craft == null || !craft.hasCraftCost())) {
                 addLoadingTooltip(lines, "Calculating direct craft cost...", "Waiting for direct ingredient pricing");
@@ -123,6 +128,7 @@ public class TooltipHandler {
         long now = System.currentTimeMillis();
         if (!itemId.equals(hoveredItemId)) {
             hoveredItemId = itemId;
+            requestedItemId = null;
             hoverStartedAt = now;
             return 0;
         }
@@ -151,6 +157,16 @@ public class TooltipHandler {
 
     private void resetHoverTimer() {
         hoveredItemId = null;
+        requestedItemId = null;
         hoverStartedAt = 0L;
+    }
+
+    private void requestPricesForHover(String itemId) {
+        if (itemId.equals(requestedItemId)) {
+            return;
+        }
+
+        requestedItemId = itemId;
+        priceFetcher.requestDirectPrices(itemId, recipeCache);
     }
 }

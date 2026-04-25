@@ -12,27 +12,47 @@ public class PriceCache {
 
     private final ConcurrentHashMap<String, PriceEntry> cache = new ConcurrentHashMap<>();
 
-    public void put(String itemTag, PriceEntry entry) {
-        cache.put(itemTag, entry);
+    public boolean put(String itemTag, PriceEntry entry) {
+        PriceEntry previous = cache.put(itemTag, entry);
+        return previous == null || !previous.sameValues(entry.getLowestBin(), entry.getBazaarBuyPrice(), entry.getBazaarSellPrice());
     }
 
-    public void putBin(String itemTag, long lowestBin) {
+    public boolean putBin(String itemTag, long lowestBin) {
         PriceEntry existing = cache.get(itemTag);
         if (existing != null && existing.hasBazaar()) {
+            if (existing.sameValues(lowestBin, existing.getBazaarBuyPrice(), existing.getBazaarSellPrice())) {
+                return false;
+            }
+
             cache.put(itemTag, PriceEntry.combined(lowestBin, existing.getBazaarBuyPrice(), existing.getBazaarSellPrice()));
-        } else {
-            cache.put(itemTag, PriceEntry.fromBin(lowestBin));
+            return true;
         }
+
+        if (existing != null && existing.sameValues(lowestBin, -1, -1)) {
+            return false;
+        }
+
+        cache.put(itemTag, PriceEntry.fromBin(lowestBin));
+        return true;
     }
 
-    public void putBazaar(String itemTag, double buyPrice, double sellPrice) {
+    public boolean putBazaar(String itemTag, double buyPrice, double sellPrice) {
         PriceEntry existing = cache.get(itemTag);
         if (existing != null && existing.hasBin()) {
-            // merge with existing BIN data
+            if (existing.sameValues(existing.getLowestBin(), buyPrice, sellPrice)) {
+                return false;
+            }
+
             cache.put(itemTag, PriceEntry.combined(existing.getLowestBin(), buyPrice, sellPrice));
-        } else {
-            cache.put(itemTag, PriceEntry.fromBazaar(buyPrice, sellPrice));
+            return true;
         }
+
+        if (existing != null && existing.sameValues(-1, buyPrice, sellPrice)) {
+            return false;
+        }
+
+        cache.put(itemTag, PriceEntry.fromBazaar(buyPrice, sellPrice));
+        return true;
     }
 
     public PriceEntry get(String itemTag) {

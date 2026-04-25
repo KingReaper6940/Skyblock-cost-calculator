@@ -18,6 +18,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
  */
 public class CraftCostClient implements ClientModInitializer {
 
+    private static final long REI_FALLBACK_COOLDOWN_MS = 10_000L;
+
     private static CraftCostClient instance;
 
     private CraftCostConfig config;
@@ -29,8 +31,10 @@ public class CraftCostClient implements ClientModInitializer {
     private TooltipHandler tooltipHandler;
     private REICompat reiCompat;
     private RepoRecipeLoader repoRecipeLoader;
+    private int localRecipeCount;
     private int recipeLoadAttempts;
     private int recipeLoadTicks;
+    private long lastFallbackRecipeLoadAt;
 
     @Override
     public void onInitializeClient() {
@@ -52,16 +56,30 @@ public class CraftCostClient implements ClientModInitializer {
         priceFetcher.start();
 
         repoRecipeLoader = new RepoRecipeLoader();
-        repoRecipeLoader.loadInto(recipeCache);
+        localRecipeCount = repoRecipeLoader.loadInto(recipeCache);
 
         reiCompat = new REICompat(recipeCache);
-        ClientLifecycleEvents.CLIENT_STARTED.register(client -> reiCompat.loadRecipes());
-        ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            if (recipeCache.size() > 0 || recipeLoadAttempts >= 30 || !REICompat.isLoaded()) return;
-            if (client.level == null || ++recipeLoadTicks % 20 != 0) return;
+        if (localRecipeCount == 0) {
+            ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
+                if (reiCompat.loadRecipes() > 0) {
+                    craftCostEngine.invalidate();
+                }
+            });
+            ClientTickEvents.END_CLIENT_TICK.register(client -> {
+                if (recipeCache.size() > 0 || recipeLoadAttempts >= 30 || !REICompat.isLoaded()) return;
+                if (client.level == null || ++recipeLoadTicks % 20 != 0) return;
 
-            recipeLoadAttempts++;
-            reiCompat.loadRecipes();
+                recipeLoadAttempts++;
+                if (reiCompat.loadRecipes() > 0) {
+                    craftCostEngine.invalidate();
+                }
+            });
+        }
+
+        ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+            if (priceFetcher != null) {
+                priceFetcher.stop();
+            }
         });
 
         // hook into tooltips
@@ -89,5 +107,21 @@ public class CraftCostClient implements ClientModInitializer {
 
     public CoflnetClient getCoflnetClient() {
         return coflnetClient;
+    }
+
+    public void requestRecipeFallbackLoad() {
+        if (!REICompat.isLoaded() || reiCompat == null) {
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+        if (now - lastFallbackRecipeLoadAt < REI_FALLBACK_COOLDOWN_MS) {
+            return;
+        }
+
+        lastFallbackRecipeLoadAt = now;
+        if (reiCompat.loadRecipes() > 0) {
+            craftCostEngine.invalidate();
+        }
     }
 }

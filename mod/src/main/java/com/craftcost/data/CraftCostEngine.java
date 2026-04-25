@@ -30,7 +30,7 @@ public class CraftCostEngine {
     public CraftResult calculate(String itemTag) {
         // check memo cache
         CraftResult cached = resultCache.get(itemTag);
-        if (cached != null && !cached.isStale()) {
+        if (cached != null) {
             return cached;
         }
 
@@ -146,14 +146,12 @@ public class CraftCostEngine {
         private final double buyPrice; // -1 if not available
         private final double craftCost; // -1 if not available
         private final Map<String, IngredientCost> breakdown;
-        private final long timestamp;
 
         CraftResult(String itemTag, double buyPrice, double craftCost, Map<String, IngredientCost> breakdown) {
             this.itemTag = itemTag;
             this.buyPrice = buyPrice;
             this.craftCost = craftCost;
             this.breakdown = breakdown;
-            this.timestamp = System.currentTimeMillis();
         }
 
         static CraftResult buyOnly(String itemTag, double buyPrice) {
@@ -199,10 +197,6 @@ public class CraftCostEngine {
 
         public Map<String, IngredientCost> getBreakdown() {
             return breakdown;
-        }
-
-        boolean isStale() {
-            return System.currentTimeMillis() - timestamp > 60_000; // 1 min cache
         }
     }
 

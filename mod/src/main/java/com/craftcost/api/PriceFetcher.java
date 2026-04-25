@@ -77,17 +77,17 @@ public class PriceFetcher {
     }
 
     /**
-     * Request pricing for an item and the ingredients needed to craft it.
+     * Request pricing for an item and its direct recipe ingredients.
      * This stays lightweight because the underlying queue deduplicates and rate limits requests.
      */
-    public void requestPriceTree(String itemTag, RecipeCache recipeCache, int maxDepth) {
+    public void requestDirectPrices(String itemTag, RecipeCache recipeCache) {
         requestPrice(itemTag);
 
-        if (recipeCache == null || maxDepth <= 0) {
+        if (recipeCache == null) {
             return;
         }
 
-        for (String ingredientTag : recipeCache.collectIngredientTags(itemTag, maxDepth)) {
+        for (String ingredientTag : recipeCache.collectDirectIngredientTags(itemTag)) {
             requestPrice(ingredientTag);
         }
     }
@@ -141,8 +141,9 @@ public class PriceFetcher {
             }
 
             if (lowestBin < Long.MAX_VALUE) {
-                cache.putBin(itemTag, lowestBin);
-                craftCostEngine.invalidate();
+                if (cache.putBin(itemTag, lowestBin)) {
+                    craftCostEngine.invalidate();
+                }
             }
         });
 
@@ -151,8 +152,9 @@ public class PriceFetcher {
             if (bazaar.has("buyPrice")) {
                 double buyPrice = bazaar.get("buyPrice").getAsDouble();
                 double sellPrice = bazaar.has("sellPrice") ? bazaar.get("sellPrice").getAsDouble() : 0;
-                cache.putBazaar(itemTag, buyPrice, sellPrice);
-                craftCostEngine.invalidate();
+                if (cache.putBazaar(itemTag, buyPrice, sellPrice)) {
+                    craftCostEngine.invalidate();
+                }
             }
         });
 

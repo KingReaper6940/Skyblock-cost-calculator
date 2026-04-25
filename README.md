@@ -20,7 +20,7 @@ The tooltip is intentionally conservative so it does not hammer your game or the
 
 ## Current behavior
 
-As of `craftcost 0.1.8`, the tooltip flow works like this:
+As of `craftcost 1.0.0`, the tooltip flow works like this:
 
 - No price checks happen immediately when you glance over an item.
 - You must hold the same SkyBlock item for 10 seconds before calculation starts.
@@ -107,7 +107,7 @@ mod/build/libs/
 The current version in source is:
 
 ```text
-craftcost-0.1.8
+craftcost-1.0.0
 ```
 
 ## Installing the mod
@@ -182,6 +182,19 @@ AGENTS.md                repo-specific instructions for coding agents
 This README is meant to track the real behavior of the project, not the ideal version in our heads.
 
 If the mod's tooltip flow, recipe sources, compatibility target, config format, or installation story changes, the README should be updated in the same change.
+
+## Release 1.0.0
+
+`1.0.0` is the first release meant to be publishable on GitHub and Modrinth.
+
+Main release points:
+
+- one-layer craft-cost pricing for practical in-game comparisons
+- long-hover activation to avoid normal inventory lag
+- queued and deduplicated price fetching
+- direct ingredient loading from local SkyBlock repo cache
+- soft-fail REI fallback instead of crash-prone hard dependency
+- cleaner caching and lower repeated tooltip work
 
 ## Credits
 

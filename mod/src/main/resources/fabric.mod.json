@@ -3,10 +3,12 @@
     "id": "craftcost",
     "version": "${version}",
     "name": "CraftCost",
-    "description": "Shows raw craft cost vs lowest BIN in item tooltips for Hypixel SkyBlock. Price data provided by SkyCofl/Coflnet.",
+    "description": "Shows direct craft cost vs Lowest BIN or Bazaar price in Hypixel SkyBlock item tooltips. Price data provided by SkyCofl/Coflnet.",
     "authors": ["KingReaper6940"],
     "contact": {
-        "sources": "https://github.com/KingReaper6940/Skyblock-cost-calculator"
+        "homepage": "https://github.com/KingReaper6940/Skyblock-cost-calculator",
+        "sources": "https://github.com/KingReaper6940/Skyblock-cost-calculator",
+        "issues": "https://github.com/KingReaper6940/Skyblock-cost-calculator/issues"
     },
     "license": "MIT",
     "environment": "client",
