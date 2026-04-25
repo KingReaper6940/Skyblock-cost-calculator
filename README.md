@@ -20,7 +20,7 @@ The tooltip is intentionally conservative so it does not hammer your game or the
 
 ## Current behavior
 
-As of `craftcost 1.0.4`, the tooltip flow works like this:
+As of `craftcost 1.0.5`, the tooltip flow works like this:
 
 - No price checks happen immediately when you glance over an item.
 - You must hold the same SkyBlock item for 10 seconds before calculation starts.
@@ -58,6 +58,7 @@ To keep the mod light:
 - most items use Coflnet's compact current-price endpoint first,
 - if that misses, CraftCost tries Bazaar snapshot,
 - if Bazaar misses too, CraftCost tries active AH BIN,
+- every Coflnet request is globally spaced out inside the mod so fallback chains cannot burst the public API limit,
 - requests are queued instead of fired immediately,
 - only hovered items are tracked,
 - the queue is capped,
@@ -107,7 +108,7 @@ mod/build/libs/
 The current version in source is:
 
 ```text
-craftcost-1.0.4
+craftcost-1.0.5
 ```
 
 ## Installing the mod
@@ -191,6 +192,16 @@ CraftCost now uses an in-game-source-first order for recipes:
 2. the user's local `skyblock-repo-cache/recipes.min.json`, only if REI never produces recipes
 
 This keeps recipe IDs tied to the actual item stacks in the running client. It also removes the stale bundled snapshot that caused wrong or confusing item IDs.
+
+## Release 1.0.5
+
+`1.0.5` is an API pacing hotfix.
+
+Main release points:
+
+- adds real per-request pacing for Coflnet calls
+- prevents fallback endpoint chains from bursting past the public API budget
+- lowers rate-limit pressure on large ingredient fan-outs
 
 ## Release 1.0.4
 

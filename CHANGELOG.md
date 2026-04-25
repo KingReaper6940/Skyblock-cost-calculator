@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.5 - 2026-04-25
+
+API pacing hotfix.
+
+- added real per-request Coflnet pacing in the HTTP client
+- keeps fallback endpoint chains from bursting past the public API budget
+- reduces hidden rate-limit pressure when one hovered item fans out into many ingredient lookups
+
 ## 1.0.4 - 2026-04-25
 
 Tooltip wording polish release.

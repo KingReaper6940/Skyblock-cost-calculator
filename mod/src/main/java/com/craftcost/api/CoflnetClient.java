@@ -14,6 +14,9 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * HTTP client for the Coflnet SkyBlock API.
@@ -23,9 +26,12 @@ public class CoflnetClient {
 
     private static final String BASE_URL = "https://sky.coflnet.com/api";
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
-    private static final String USER_AGENT = "CraftCost/1.0.3 (+https://github.com/KingReaper6940/Skyblock-cost-calculator)";
+    private static final String USER_AGENT = "CraftCost/1.0.5 (+https://github.com/KingReaper6940/Skyblock-cost-calculator)";
+    private static final long REQUEST_SPACING_MS = 700L;
 
     private final HttpClient httpClient;
+    private final Object rateLimitLock = new Object();
+    private long nextRequestAt;
 
     public CoflnetClient() {
         this.httpClient = HttpClient.newBuilder()
@@ -99,7 +105,7 @@ public class CoflnetClient {
                 .GET()
                 .build();
 
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        return scheduleRequest(() -> httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()))
                 .thenApply(response -> {
                     if (response.statusCode() == 200) {
                         return ApiResponse.success(response.statusCode(), JsonParser.parseString(response.body()).getAsJsonArray());
@@ -122,7 +128,7 @@ public class CoflnetClient {
                 .GET()
                 .build();
 
-        return httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+        return scheduleRequest(() -> httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString()))
                 .thenApply(response -> {
                     if (response.statusCode() == 200) {
                         return ApiResponse.success(response.statusCode(), JsonParser.parseString(response.body()).getAsJsonObject());
@@ -219,6 +225,22 @@ public class CoflnetClient {
 
     private String encodePathSegment(String value) {
         return URLEncoder.encode(value, StandardCharsets.UTF_8).replace("+", "%20");
+    }
+
+    private <T> CompletableFuture<T> scheduleRequest(Supplier<CompletableFuture<T>> requestSupplier) {
+        long delayMs;
+        synchronized (rateLimitLock) {
+            long now = System.currentTimeMillis();
+            delayMs = Math.max(0L, nextRequestAt - now);
+            nextRequestAt = Math.max(now, nextRequestAt) + REQUEST_SPACING_MS;
+        }
+
+        Executor executor = delayMs > 0
+                ? CompletableFuture.delayedExecutor(delayMs, TimeUnit.MILLISECONDS)
+                : Runnable::run;
+
+        return CompletableFuture.supplyAsync(() -> null, executor)
+                .thenCompose(ignored -> requestSupplier.get());
     }
 
     public record ApiResponse<T>(int statusCode, T body) {
