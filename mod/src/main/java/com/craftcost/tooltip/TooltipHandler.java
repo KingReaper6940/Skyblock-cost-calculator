@@ -39,9 +39,6 @@ public class TooltipHandler {
             if (itemId == null) return;
 
             priceFetcher.requestPrice(itemId);
-            for (String ingredientId : recipeCache.collectIngredientTags(itemId, 10)) {
-                priceFetcher.requestPrice(ingredientId);
-            }
 
             PriceEntry price = priceCache.get(itemId);
             CraftCostEngine.CraftResult craft = craftCostEngine.calculate(itemId);

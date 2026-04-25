@@ -25,6 +25,7 @@ public class CoflnetClient {
 
     public CoflnetClient() {
         this.httpClient = HttpClient.newBuilder()
+                .version(HttpClient.Version.HTTP_1_1)
                 .connectTimeout(TIMEOUT)
                 .build();
     }

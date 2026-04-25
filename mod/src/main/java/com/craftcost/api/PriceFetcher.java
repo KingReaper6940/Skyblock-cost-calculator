@@ -9,9 +9,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -22,6 +24,9 @@ import java.util.concurrent.TimeUnit;
  */
 public class PriceFetcher {
 
+    private static final int MAX_QUEUE_SIZE = 128;
+    private static final long FETCH_COOLDOWN_MS = 5 * 60 * 1000L;
+
     private final CoflnetClient client;
     private final PriceCache cache;
     private final CraftCostConfig config;
@@ -31,6 +36,9 @@ public class PriceFetcher {
     // items that have been requested and need price updates
     private final Set<String> trackedItems = ConcurrentHashMap.newKeySet();
     private final Set<String> inFlightItems = ConcurrentHashMap.newKeySet();
+    private final Set<String> queuedItems = ConcurrentHashMap.newKeySet();
+    private final Queue<String> pendingItems = new ConcurrentLinkedQueue<>();
+    private final ConcurrentHashMap<String, Long> lastFetchAttempt = new ConcurrentHashMap<>();
 
     public PriceFetcher(CoflnetClient client, PriceCache cache, CraftCostConfig config, CraftCostEngine craftCostEngine) {
         this.client = client;
@@ -46,7 +54,8 @@ public class PriceFetcher {
 
     public void start() {
         int interval = config.getRefreshIntervalSeconds();
-        scheduler.scheduleAtFixedRate(this::refreshAll, 0, interval, TimeUnit.SECONDS);
+        scheduler.scheduleWithFixedDelay(this::processNextQueuedItem, 500, 750, TimeUnit.MILLISECONDS);
+        scheduler.scheduleAtFixedRate(this::refreshAll, interval, interval, TimeUnit.SECONDS);
         CraftCostMod.LOGGER.info("[CraftCost] Price fetcher started ({}s interval)", interval);
     }
 
@@ -62,22 +71,45 @@ public class PriceFetcher {
         trackedItems.add(itemTag);
 
         if (!cache.has(itemTag) || cache.isExpired(itemTag)) {
-            fetchPrice(itemTag);
+            queueFetch(itemTag);
         }
     }
 
     private void refreshAll() {
         for (String tag : trackedItems) {
             if (cache.isExpired(tag)) {
-                fetchPrice(tag);
+                queueFetch(tag);
             }
         }
+    }
+
+    private void queueFetch(String itemTag) {
+        long now = System.currentTimeMillis();
+        long lastAttempt = lastFetchAttempt.getOrDefault(itemTag, 0L);
+        if (now - lastAttempt < FETCH_COOLDOWN_MS) {
+            return;
+        }
+
+        if (pendingItems.size() >= MAX_QUEUE_SIZE || !queuedItems.add(itemTag)) {
+            return;
+        }
+
+        pendingItems.offer(itemTag);
+    }
+
+    private void processNextQueuedItem() {
+        String itemTag = pendingItems.poll();
+        if (itemTag == null) return;
+
+        queuedItems.remove(itemTag);
+        fetchPrice(itemTag);
     }
 
     private void fetchPrice(String itemTag) {
         if (!inFlightItems.add(itemTag)) {
             return;
         }
+        lastFetchAttempt.put(itemTag, System.currentTimeMillis());
 
         // try BIN auctions first
         CompletableFuture<Void> binFuture = client.getActiveBinAuctions(itemTag).thenAccept(auctions -> {
