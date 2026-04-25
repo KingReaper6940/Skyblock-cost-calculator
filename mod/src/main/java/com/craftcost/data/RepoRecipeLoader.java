@@ -73,6 +73,7 @@ public class RepoRecipeLoader {
         return switch (type) {
             case "crafting" -> parseCraftingRecipe(recipe, outputId, outputCount);
             case "forge" -> parseForgeRecipe(recipe, outputId, outputCount);
+            case "shop" -> parseShopRecipe(recipe, outputId, outputCount);
             default -> null;
         };
     }
@@ -146,6 +147,44 @@ public class RepoRecipeLoader {
         }
 
         double coinCost = recipe.has("coins") ? recipe.get("coins").getAsDouble() : 0;
+        return new RecipeCache.Recipe(outputId, outputCount, ingredients, coinCost);
+    }
+
+    private RecipeCache.Recipe parseShopRecipe(JsonObject recipe, String outputId, int outputCount) {
+        if (!recipe.has("inputs")) {
+            return null;
+        }
+
+        JsonArray inputs = recipe.getAsJsonArray("inputs");
+        List<RecipeCache.Ingredient> ingredients = new ArrayList<>();
+        double coinCost = 0;
+
+        for (JsonElement inputElement : inputs) {
+            if (!inputElement.isJsonObject()) {
+                continue;
+            }
+
+            JsonObject input = inputElement.getAsJsonObject();
+            String inputType = input.has("type") ? input.get("type").getAsString() : "";
+
+            if ("currency".equals(inputType) && input.has("currency") &&
+                    "COIN".equalsIgnoreCase(input.get("currency").getAsString())) {
+                coinCost += input.has("count") ? input.get("count").getAsDouble() : 0;
+                continue;
+            }
+
+            if (!input.has("id")) {
+                continue;
+            }
+
+            int count = input.has("count") ? input.get("count").getAsInt() : 1;
+            ingredients.add(new RecipeCache.Ingredient(input.get("id").getAsString(), count));
+        }
+
+        if (ingredients.isEmpty() && coinCost <= 0) {
+            return null;
+        }
+
         return new RecipeCache.Recipe(outputId, outputCount, ingredients, coinCost);
     }
 }

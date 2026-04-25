@@ -20,11 +20,11 @@ The tooltip is intentionally conservative so it does not hammer your game or the
 
 ## Current behavior
 
-As of `craftcost 0.1.5`, the tooltip flow works like this:
+As of `craftcost 0.1.6`, the tooltip flow works like this:
 
 - No price checks happen immediately when you glance over an item.
 - You must hold the same SkyBlock item for 10 seconds before calculation starts.
-- After that, CraftCost queues the item for pricing and processes requests slowly in the background.
+- After that, CraftCost queues the item and its ingredient tree for pricing, then processes requests slowly in the background.
 - Once the needed data is available, the tooltip can show:
   - `Lowest BIN` or `Bazaar Buy`
   - `Raw Craft Cost`
@@ -49,6 +49,7 @@ CraftCost currently loads these recipe types from the local cache:
 
 - `crafting`
 - `forge`
+- `shop`
 
 REI support is still present as a fallback and compatibility layer, but it is treated as best-effort and should never be the thing that takes the client down.
 
@@ -103,7 +104,7 @@ mod/build/libs/
 The current version in source is:
 
 ```text
-craftcost-0.1.5
+craftcost-0.1.6
 ```
 
 ## Installing the mod

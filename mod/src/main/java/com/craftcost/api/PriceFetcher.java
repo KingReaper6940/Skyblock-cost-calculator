@@ -5,6 +5,7 @@ import com.craftcost.config.CraftCostConfig;
 import com.craftcost.data.CraftCostEngine;
 import com.craftcost.data.PriceCache;
 import com.craftcost.data.PriceEntry;
+import com.craftcost.data.RecipeCache;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -72,6 +73,22 @@ public class PriceFetcher {
 
         if (!cache.has(itemTag) || cache.isExpired(itemTag)) {
             queueFetch(itemTag);
+        }
+    }
+
+    /**
+     * Request pricing for an item and the ingredients needed to craft it.
+     * This stays lightweight because the underlying queue deduplicates and rate limits requests.
+     */
+    public void requestPriceTree(String itemTag, RecipeCache recipeCache, int maxDepth) {
+        requestPrice(itemTag);
+
+        if (recipeCache == null || maxDepth <= 0) {
+            return;
+        }
+
+        for (String ingredientTag : recipeCache.collectIngredientTags(itemTag, maxDepth)) {
+            requestPrice(ingredientTag);
         }
     }
 

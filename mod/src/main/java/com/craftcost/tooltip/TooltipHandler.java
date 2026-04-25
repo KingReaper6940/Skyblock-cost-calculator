@@ -18,9 +18,11 @@ import java.util.List;
 public class TooltipHandler {
 
     private static final long HOLD_TO_CALCULATE_MS = 10_000L;
+    private static final int PRICE_TREE_DEPTH = 6;
 
     private final PriceCache priceCache;
     private final CraftCostEngine craftCostEngine;
+    private final RecipeCache recipeCache;
     private final PriceFetcher priceFetcher;
     private final CraftCostConfig config;
     private String hoveredItemId;
@@ -30,6 +32,7 @@ public class TooltipHandler {
                           PriceFetcher priceFetcher, CraftCostConfig config) {
         this.priceCache = priceCache;
         this.craftCostEngine = craftCostEngine;
+        this.recipeCache = recipeCache;
         this.priceFetcher = priceFetcher;
         this.config = config;
     }
@@ -53,7 +56,7 @@ public class TooltipHandler {
                 return;
             }
 
-            priceFetcher.requestPrice(itemId);
+            priceFetcher.requestPriceTree(itemId, recipeCache, PRICE_TREE_DEPTH);
 
             PriceEntry price = priceCache.get(itemId);
             CraftCostEngine.CraftResult craft = craftCostEngine.calculate(itemId);
@@ -104,7 +107,11 @@ public class TooltipHandler {
                     }
                 }
             } else if (craft != null && craft.hasBuyPrice()) {
-                lines.add(Component.literal(" §7CraftCost: §8No known recipe data"));
+                if (recipeCache.has(itemId)) {
+                    lines.add(Component.literal(" §7CraftCost: §8Pricing ingredients..."));
+                } else {
+                    lines.add(Component.literal(" §7CraftCost: §8No known recipe data"));
+                }
             }
 
             lines.add(Component.literal("§8§m                    §r"));
