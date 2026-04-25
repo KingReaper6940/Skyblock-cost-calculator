@@ -20,7 +20,7 @@ The tooltip is intentionally conservative so it does not hammer your game or the
 
 ## Current behavior
 
-As of `craftcost 1.0.3`, the tooltip flow works like this:
+As of `craftcost 1.0.4`, the tooltip flow works like this:
 
 - No price checks happen immediately when you glance over an item.
 - You must hold the same SkyBlock item for 10 seconds before calculation starts.
@@ -29,7 +29,7 @@ As of `craftcost 1.0.3`, the tooltip flow works like this:
 - Once the needed data is available, the tooltip can show:
   - `Lowest BIN` or `Bazaar Buy`
   - `Raw Craft Cost`
-  - a recommendation line such as `Craft cost is higher, buy Lowest BIN`
+  - a recommendation line such as `Not worth crafting, buy on AH instead`
   - an ingredient cost breakdown
 
 This means the mod trades speed for stability on purpose. It is built to be quiet during ordinary inventory movement and REI browsing.
@@ -107,7 +107,7 @@ mod/build/libs/
 The current version in source is:
 
 ```text
-craftcost-1.0.3
+craftcost-1.0.4
 ```
 
 ## Installing the mod
@@ -139,7 +139,7 @@ Depending on what data is available, the tooltip may show results like:
 ```text
 Lowest BIN: 10.9M
 Raw Craft Cost: 11.4M
-Reason: Craft cost is higher, buy Lowest BIN
+Reason: Not worth crafting, buy on AH instead
 ```
 
 or:
@@ -191,6 +191,16 @@ CraftCost now uses an in-game-source-first order for recipes:
 2. the user's local `skyblock-repo-cache/recipes.min.json`, only if REI never produces recipes
 
 This keeps recipe IDs tied to the actual item stacks in the running client. It also removes the stale bundled snapshot that caused wrong or confusing item IDs.
+
+## Release 1.0.4
+
+`1.0.4` is a tooltip wording polish release.
+
+Main release points:
+
+- explicitly says `Not worth crafting` when buying is cheaper
+- recommendation text now names `AH` or `Bazaar` based on the current market source
+- shows how much more crafting would cost in the buy-instead case
 
 ## Release 1.0.3
 

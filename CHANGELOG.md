@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.4 - 2026-04-25
+
+Tooltip wording polish release.
+
+- added an explicit `Not worth crafting` recommendation when buying is cheaper
+- recommendation text now points to `AH` or `Bazaar` based on the current market source
+- added a second line showing how much extra crafting would cost
+
 ## 1.0.3 - 2026-04-25
 
 REI-first recipe and pricing reliability hotfix.

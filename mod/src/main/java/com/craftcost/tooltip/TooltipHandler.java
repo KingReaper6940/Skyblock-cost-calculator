@@ -102,7 +102,10 @@ public class TooltipHandler {
                         lines.add(Component.literal("   \u00A77Reason: \u00A7aCrafting saves \u00A7e" +
                                 NumberFormatter.format(craft.getSavings())));
                     } else if (craft.isCheaperToBuy()) {
-                        lines.add(Component.literal("   \u00A77Reason: \u00A7cCraft cost is higher, buy Lowest BIN"));
+                        lines.add(Component.literal("   \u00A77Reason: \u00A7cNot worth crafting, buy on " +
+                                getBuySourceLabel(price) + " \u00A77instead"));
+                        lines.add(Component.literal("   \u00A78Crafting costs " +
+                                NumberFormatter.format(craft.getSavings()) + " more"));
                     }
                 }
 
@@ -173,5 +176,18 @@ public class TooltipHandler {
         requestedItemId = itemId;
         requestedWithRecipeData = hasRecipeData;
         priceFetcher.requestDirectPrices(itemId, recipeCache);
+    }
+
+    private String getBuySourceLabel(PriceEntry price) {
+        if (price != null) {
+            if (price.hasBazaar()) {
+                return "\u00A7bBazaar";
+            }
+            if (price.hasBin()) {
+                return "\u00A76AH";
+            }
+        }
+
+        return "\u00A77market";
     }
 }
