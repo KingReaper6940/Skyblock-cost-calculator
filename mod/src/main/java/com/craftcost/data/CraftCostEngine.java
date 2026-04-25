@@ -1,16 +1,13 @@
 package com.craftcost.data;
 
-import com.craftcost.CraftCostMod;
-
-import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * Recursive craft cost calculator.
- * For each item, determines the cheapest way to obtain it:
- * either buy it directly or craft it from ingredients (recursively).
+ * Direct craft cost calculator.
+ * For each item, prices only the immediate ingredients in its recipe.
+ * If one of those ingredients is itself a crafted item, this engine uses its market price
+ * rather than recursively expanding it again.
  */
 public class CraftCostEngine {
 
@@ -27,7 +24,7 @@ public class CraftCostEngine {
     }
 
     /**
-     * Calculate the cheapest way to obtain an item.
+     * Calculate direct craft cost for an item.
      * Returns null if no price data is available.
      */
     public CraftResult calculate(String itemTag) {
@@ -37,7 +34,7 @@ public class CraftCostEngine {
             return cached;
         }
 
-        CraftResult result = doCalculate(itemTag, 0);
+        CraftResult result = doCalculate(itemTag);
         if (result != null) {
             resultCache.put(itemTag, result);
         }
@@ -45,8 +42,7 @@ public class CraftCostEngine {
     }
 
     /**
-     * Returns true when the full recursive recipe tree is resolved enough to produce a stable craft cost.
-     * For craftable items, this waits until every known recipe branch can be evaluated completely.
+     * Returns true when the direct recipe inputs are all priced and a stable craft cost can be shown.
      */
     public boolean isFullyResolved(String itemTag) {
         Boolean cached = resolutionCache.get(itemTag);
@@ -54,17 +50,12 @@ public class CraftCostEngine {
             return cached;
         }
 
-        boolean resolved = doIsFullyResolved(itemTag, 0, new HashSet<>());
+        boolean resolved = doIsFullyResolved(itemTag);
         resolutionCache.put(itemTag, resolved);
         return resolved;
     }
 
-    private CraftResult doCalculate(String itemTag, int depth) {
-        // prevent infinite recursion
-        if (depth > 10) {
-            return null;
-        }
-
+    private CraftResult doCalculate(String itemTag) {
         double buyPrice = priceCache.getBuyPrice(itemTag);
         var recipes = recipeCache.getAll(itemTag);
 
@@ -87,22 +78,13 @@ public class CraftCostEngine {
                 String ingTag = ingredient.getItemTag();
                 int count = ingredient.getCount();
 
-                // recursively find cheapest way to get this ingredient
-                CraftResult ingResult = doCalculate(ingTag, depth + 1);
-                double ingPrice;
-
-                if (ingResult != null) {
-                    ingPrice = ingResult.getCheapestPrice() * count;
-                } else {
-                    double ingBuyPrice = priceCache.getBuyPrice(ingTag);
-                    if (ingBuyPrice > 0) {
-                        ingPrice = ingBuyPrice * count;
-                    } else {
-                        allIngredientsAvailable = false;
-                        break;
-                    }
+                double ingredientBuyPrice = priceCache.getBuyPrice(ingTag);
+                if (ingredientBuyPrice <= 0) {
+                    allIngredientsAvailable = false;
+                    break;
                 }
 
+                double ingPrice = ingredientBuyPrice * count;
                 craftCost += ingPrice;
                 breakdown.put(ingTag, new IngredientCost(ingTag, count, ingPrice));
             }
@@ -131,30 +113,22 @@ public class CraftCostEngine {
         return null;
     }
 
-    private boolean doIsFullyResolved(String itemTag, int depth, Set<String> visiting) {
-        if (depth > 10 || !visiting.add(itemTag)) {
-            return false;
+    private boolean doIsFullyResolved(String itemTag) {
+        var recipes = recipeCache.getAll(itemTag);
+
+        if (recipes.isEmpty()) {
+            return priceCache.getBuyPrice(itemTag) > 0;
         }
 
-        try {
-            var recipes = recipeCache.getAll(itemTag);
-
-            if (recipes.isEmpty()) {
-                return priceCache.getBuyPrice(itemTag) > 0;
-            }
-
-            for (RecipeCache.Recipe recipe : recipes) {
-                for (RecipeCache.Ingredient ingredient : recipe.getIngredients()) {
-                    if (!doIsFullyResolved(ingredient.getItemTag(), depth + 1, visiting)) {
-                        return false;
-                    }
+        for (RecipeCache.Recipe recipe : recipes) {
+            for (RecipeCache.Ingredient ingredient : recipe.getIngredients()) {
+                if (priceCache.getBuyPrice(ingredient.getItemTag()) <= 0) {
+                    return false;
                 }
             }
-
-            return true;
-        } finally {
-            visiting.remove(itemTag);
         }
+
+        return true;
     }
 
     /**

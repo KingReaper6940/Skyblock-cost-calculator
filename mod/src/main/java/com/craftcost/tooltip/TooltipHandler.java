@@ -18,7 +18,7 @@ import java.util.List;
 public class TooltipHandler {
 
     private static final long HOLD_TO_CALCULATE_MS = 10_000L;
-    private static final int PRICE_TREE_DEPTH = 6;
+    private static final int PRICE_TREE_DEPTH = 1;
     private static final String GRAY_RULE = "\u00A78\u00A7m                    \u00A7r";
 
     private final PriceCache priceCache;
@@ -65,7 +65,7 @@ public class TooltipHandler {
             boolean craftTreeReady = !hasKnownRecipe || craftCostEngine.isFullyResolved(itemId);
 
             if (hasKnownRecipe && (!craftTreeReady || craft == null || !craft.hasCraftCost())) {
-                addLoadingTooltip(lines, "Calculating full craft cost...", "Waiting for complete ingredient pricing");
+                addLoadingTooltip(lines, "Calculating direct craft cost...", "Waiting for direct ingredient pricing");
                 return;
             }
 

@@ -4,7 +4,7 @@ This repo started as a Hypixel SkyBlock craft-cost website, and now also contain
 
 The mod is the main thing here.
 
-`CraftCost` adds a lightweight tooltip overlay in Hypixel SkyBlock that compares market price against the real recursive craft cost of an item. Instead of only telling you the lowest BIN, it can also show the raw craft cost and explain which option is better.
+`CraftCost` adds a lightweight tooltip overlay in Hypixel SkyBlock that compares market price against the direct craft cost of an item. Instead of only telling you the lowest BIN, it can also show the raw craft cost and explain which option is better.
 
 ## What the mod does
 
@@ -13,19 +13,19 @@ When you hover a SkyBlock item for long enough, the mod:
 1. identifies the SkyBlock item ID from its NBT,
 2. loads recipe data from the local `skyblock-repo-cache`,
 3. fetches current price data from Coflnet,
-4. recursively prices the full ingredient tree,
+4. prices the immediate recipe ingredients using their market prices,
 5. shows the result directly in the tooltip.
 
 The tooltip is intentionally conservative so it does not hammer your game or the pricing API during normal browsing.
 
 ## Current behavior
 
-As of `craftcost 0.1.7`, the tooltip flow works like this:
+As of `craftcost 0.1.8`, the tooltip flow works like this:
 
 - No price checks happen immediately when you glance over an item.
 - You must hold the same SkyBlock item for 10 seconds before calculation starts.
-- After that, CraftCost queues the item and its ingredient tree for pricing, then processes requests slowly in the background.
-- For craftable items, the tooltip stays in a loading state until the full recursive recipe tree is resolved, so it does not flash partial or incorrect craft costs before settling.
+- After that, CraftCost queues the item and its direct recipe ingredients for pricing, then processes requests slowly in the background.
+- For craftable items, the tooltip stays in a loading state until the immediate ingredient prices are ready, so it does not flash partial or incorrect craft costs before settling.
 - Once the needed data is available, the tooltip can show:
   - `Lowest BIN` or `Bazaar Buy`
   - `Raw Craft Cost`
@@ -33,6 +33,8 @@ As of `craftcost 0.1.7`, the tooltip flow works like this:
   - an ingredient cost breakdown
 
 This means the mod trades speed for stability on purpose. It is built to be quiet during ordinary inventory movement and REI browsing.
+
+Direct craft cost means CraftCost prices only one layer of ingredients. If an ingredient is itself a crafted item, the mod uses that ingredient's Bazaar or AH price instead of recursively expanding it again. This makes items such as `ATOMSPLIT_KATANA` behave more intuitively in-game.
 
 ## How recipe loading works
 
@@ -105,7 +107,7 @@ mod/build/libs/
 The current version in source is:
 
 ```text
-craftcost-0.1.7
+craftcost-0.1.8
 ```
 
 ## Installing the mod
@@ -151,7 +153,7 @@ Reason: Crafting saves 1.1M
 ## Known limitations
 
 - The local repo cache loader currently supports `crafting` and `forge` recipes, not every SkyBlock recipe type yet.
-- Craft results depend on the ingredient prices that are available from the current cache/API state.
+- Craft results depend on the direct ingredient prices that are available from the current cache/API state.
 - The 10-second hover delay is intentional and not a bug.
 
 ## Web app
