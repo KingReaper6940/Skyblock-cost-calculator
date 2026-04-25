@@ -20,7 +20,7 @@ The tooltip is intentionally conservative so it does not hammer your game or the
 
 ## Current behavior
 
-As of `craftcost 1.0.1`, the tooltip flow works like this:
+As of `craftcost 1.0.2`, the tooltip flow works like this:
 
 - No price checks happen immediately when you glance over an item.
 - You must hold the same SkyBlock item for 10 seconds before calculation starts.
@@ -107,7 +107,7 @@ mod/build/libs/
 The current version in source is:
 
 ```text
-craftcost-1.0.1
+craftcost-1.0.2
 ```
 
 ## Installing the mod
@@ -182,6 +182,26 @@ AGENTS.md                repo-specific instructions for coding agents
 This README is meant to track the real behavior of the project, not the ideal version in our heads.
 
 If the mod's tooltip flow, recipe sources, compatibility target, config format, or installation story changes, the README should be updated in the same change.
+
+## Recipe sources
+
+CraftCost now uses a reliability-first source order for recipes:
+
+1. a bundled normalized recipe snapshot shipped inside the mod jar
+2. the user's local `skyblock-repo-cache/recipes.min.json` when available
+3. REI as a last-resort fallback for missing items
+
+This means the mod no longer depends on REI or a local cache just to know basic recipe data. The local cache can still add newer or missing recipes on top of the bundled snapshot.
+
+## Release 1.0.2
+
+`1.0.2` is a recipe-source reliability release.
+
+Main release points:
+
+- bundled a normalized SkyBlock recipe snapshot inside the mod
+- local repo cache now augments the bundled snapshot instead of being the only trustworthy source
+- REI is kept only as a final fallback path for missing items
 
 ## Release 1.0.1
 

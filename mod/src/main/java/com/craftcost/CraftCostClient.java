@@ -4,6 +4,7 @@ import com.craftcost.api.CoflnetClient;
 import com.craftcost.api.PriceFetcher;
 import com.craftcost.compat.REICompat;
 import com.craftcost.config.CraftCostConfig;
+import com.craftcost.data.BundledRecipeLoader;
 import com.craftcost.data.CraftCostEngine;
 import com.craftcost.data.PriceCache;
 import com.craftcost.data.RecipeCache;
@@ -11,7 +12,6 @@ import com.craftcost.data.RepoRecipeLoader;
 import com.craftcost.tooltip.TooltipHandler;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
-import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 
 /**
  * Client-side mod initializer — sets up the pricing pipeline and tooltip hooks.
@@ -30,10 +30,8 @@ public class CraftCostClient implements ClientModInitializer {
     private CraftCostEngine craftCostEngine;
     private TooltipHandler tooltipHandler;
     private REICompat reiCompat;
+    private BundledRecipeLoader bundledRecipeLoader;
     private RepoRecipeLoader repoRecipeLoader;
-    private int localRecipeCount;
-    private int recipeLoadAttempts;
-    private int recipeLoadTicks;
     private long lastFallbackRecipeLoadAt;
 
     @Override
@@ -55,26 +53,13 @@ public class CraftCostClient implements ClientModInitializer {
         priceFetcher = new PriceFetcher(coflnetClient, priceCache, config, craftCostEngine);
         priceFetcher.start();
 
+        bundledRecipeLoader = new BundledRecipeLoader();
+        bundledRecipeLoader.loadInto(recipeCache);
+
         repoRecipeLoader = new RepoRecipeLoader();
-        localRecipeCount = repoRecipeLoader.loadInto(recipeCache);
+        repoRecipeLoader.loadInto(recipeCache);
 
         reiCompat = new REICompat(recipeCache);
-        if (localRecipeCount == 0) {
-            ClientLifecycleEvents.CLIENT_STARTED.register(client -> {
-                if (reiCompat.loadRecipes() > 0) {
-                    craftCostEngine.invalidate();
-                }
-            });
-            ClientTickEvents.END_CLIENT_TICK.register(client -> {
-                if (recipeCache.size() > 0 || recipeLoadAttempts >= 30 || !REICompat.isLoaded()) return;
-                if (client.level == null || ++recipeLoadTicks % 20 != 0) return;
-
-                recipeLoadAttempts++;
-                if (reiCompat.loadRecipes() > 0) {
-                    craftCostEngine.invalidate();
-                }
-            });
-        }
 
         ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
             if (priceFetcher != null) {

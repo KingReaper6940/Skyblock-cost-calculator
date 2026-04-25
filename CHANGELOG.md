@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.2 - 2026-04-25
+
+Recipe-source reliability release.
+
+- bundled a normalized fallback recipe snapshot inside the mod jar
+- local SkyBlock repo cache now augments the bundled snapshot instead of being required
+- REI is now only a last-resort fallback for missing recipe data
+
 ## 1.0.1 - 2026-04-25
 
 Hotfix for tooltip resolution and stuck loading behavior.
