@@ -19,6 +19,7 @@ public class TooltipHandler {
 
     private static final long HOLD_TO_CALCULATE_MS = 10_000L;
     private static final int PRICE_TREE_DEPTH = 6;
+    private static final String GRAY_RULE = "\u00A78\u00A7m                    \u00A7r";
 
     private final PriceCache priceCache;
     private final CraftCostEngine craftCostEngine;
@@ -60,38 +61,42 @@ public class TooltipHandler {
 
             PriceEntry price = priceCache.get(itemId);
             CraftCostEngine.CraftResult craft = craftCostEngine.calculate(itemId);
+            boolean hasKnownRecipe = recipeCache.has(itemId);
+            boolean craftTreeReady = !hasKnownRecipe || craftCostEngine.isFullyResolved(itemId);
+
+            if (hasKnownRecipe && (!craftTreeReady || craft == null || !craft.hasCraftCost())) {
+                addLoadingTooltip(lines, "Calculating full craft cost...", "Waiting for complete ingredient pricing");
+                return;
+            }
 
             if (price == null && craft == null) {
-                lines.add(Component.empty());
-                lines.add(Component.literal("§8§m                    §r"));
-                lines.add(Component.literal(" §7CraftCost: §8Calculating..."));
-                lines.add(Component.literal("§8§m                    §r"));
+                addLoadingTooltip(lines, "Calculating...", null);
                 return;
             }
 
             lines.add(Component.empty());
-            lines.add(Component.literal("§8§m                    §r"));
+            lines.add(Component.literal(GRAY_RULE));
 
             if (price != null && price.hasBin()) {
-                lines.add(Component.literal(" §7Lowest BIN: §6§l" +
+                lines.add(Component.literal(" \u00A77Lowest BIN: \u00A76\u00A7l" +
                         NumberFormatter.format(price.getLowestBin())));
             } else if (price != null && price.hasBazaar()) {
-                lines.add(Component.literal(" §7Bazaar Buy: §6§l" +
+                lines.add(Component.literal(" \u00A77Bazaar Buy: \u00A76\u00A7l" +
                         NumberFormatter.format(price.getBazaarBuyPrice())));
             }
 
             if (craft != null && craft.hasCraftCost()) {
                 boolean cheaper = craft.isCheaperToCraft();
-                String color = cheaper ? "§a" : "§c";
-                lines.add(Component.literal(" §7Raw Craft Cost: " + color + "§l" +
+                String color = cheaper ? "\u00A7a" : "\u00A7c";
+                lines.add(Component.literal(" \u00A77Raw Craft Cost: " + color + "\u00A7l" +
                         NumberFormatter.format(craft.getCraftCost())));
 
                 if (config.isShowSavings() && craft.hasBuyPrice()) {
                     if (cheaper) {
-                        lines.add(Component.literal("   §7Reason: §aCrafting saves §e" +
+                        lines.add(Component.literal("   \u00A77Reason: \u00A7aCrafting saves \u00A7e" +
                                 NumberFormatter.format(craft.getSavings())));
                     } else if (craft.isCheaperToBuy()) {
-                        lines.add(Component.literal("   §7Reason: §cCraft cost is higher, buy Lowest BIN"));
+                        lines.add(Component.literal("   \u00A77Reason: \u00A7cCraft cost is higher, buy Lowest BIN"));
                     }
                 }
 
@@ -100,21 +105,17 @@ public class TooltipHandler {
                     for (int i = 0; i < entries.size(); i++) {
                         var entry = entries.get(i);
                         var ing = entry.getValue();
-                        String prefix = (i == entries.size() - 1) ? "  §8- " : "  §8| ";
-                        lines.add(Component.literal(prefix + "§f" + ing.getCount() + "x " +
-                                ing.getItemTag() + " §8- §e" +
+                        String prefix = (i == entries.size() - 1) ? "  \u00A78- " : "  \u00A78| ";
+                        lines.add(Component.literal(prefix + "\u00A7f" + ing.getCount() + "x " +
+                                ing.getItemTag() + " \u00A78- \u00A7e" +
                                 NumberFormatter.format(ing.getTotalCost())));
                     }
                 }
             } else if (craft != null && craft.hasBuyPrice()) {
-                if (recipeCache.has(itemId)) {
-                    lines.add(Component.literal(" §7CraftCost: §8Pricing ingredients..."));
-                } else {
-                    lines.add(Component.literal(" §7CraftCost: §8No known recipe data"));
-                }
+                lines.add(Component.literal(" \u00A77CraftCost: \u00A78No known recipe data"));
             }
 
-            lines.add(Component.literal("§8§m                    §r"));
+            lines.add(Component.literal(GRAY_RULE));
         });
     }
 
@@ -132,10 +133,20 @@ public class TooltipHandler {
     private void addWaitTooltip(List<Component> lines, long remainingMs) {
         long remainingSeconds = Math.max(1, (remainingMs + 999) / 1000);
         lines.add(Component.empty());
-        lines.add(Component.literal("§8§m                    §r"));
-        lines.add(Component.literal(" §7CraftCost: §8Hold hover " + remainingSeconds + "s"));
-        lines.add(Component.literal(" §8No price checks until then"));
-        lines.add(Component.literal("§8§m                    §r"));
+        lines.add(Component.literal(GRAY_RULE));
+        lines.add(Component.literal(" \u00A77CraftCost: \u00A78Hold hover " + remainingSeconds + "s"));
+        lines.add(Component.literal(" \u00A78No price checks until then"));
+        lines.add(Component.literal(GRAY_RULE));
+    }
+
+    private void addLoadingTooltip(List<Component> lines, String title, String detail) {
+        lines.add(Component.empty());
+        lines.add(Component.literal(GRAY_RULE));
+        lines.add(Component.literal(" \u00A77CraftCost: \u00A78" + title));
+        if (detail != null && !detail.isBlank()) {
+            lines.add(Component.literal(" \u00A78" + detail));
+        }
+        lines.add(Component.literal(GRAY_RULE));
     }
 
     private void resetHoverTimer() {

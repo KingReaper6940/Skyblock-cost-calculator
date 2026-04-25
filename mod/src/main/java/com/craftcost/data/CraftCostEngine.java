@@ -2,8 +2,10 @@ package com.craftcost.data;
 
 import com.craftcost.CraftCostMod;
 
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Recursive craft cost calculator.
@@ -17,6 +19,7 @@ public class CraftCostEngine {
 
     // memoization to avoid recalculating the same item
     private final Map<String, CraftResult> resultCache = new HashMap<>();
+    private final Map<String, Boolean> resolutionCache = new HashMap<>();
 
     public CraftCostEngine(PriceCache priceCache, RecipeCache recipeCache) {
         this.priceCache = priceCache;
@@ -39,6 +42,21 @@ public class CraftCostEngine {
             resultCache.put(itemTag, result);
         }
         return result;
+    }
+
+    /**
+     * Returns true when the full recursive recipe tree is resolved enough to produce a stable craft cost.
+     * For craftable items, this waits until every known recipe branch can be evaluated completely.
+     */
+    public boolean isFullyResolved(String itemTag) {
+        Boolean cached = resolutionCache.get(itemTag);
+        if (cached != null) {
+            return cached;
+        }
+
+        boolean resolved = doIsFullyResolved(itemTag, 0, new HashSet<>());
+        resolutionCache.put(itemTag, resolved);
+        return resolved;
     }
 
     private CraftResult doCalculate(String itemTag, int depth) {
@@ -113,11 +131,38 @@ public class CraftCostEngine {
         return null;
     }
 
+    private boolean doIsFullyResolved(String itemTag, int depth, Set<String> visiting) {
+        if (depth > 10 || !visiting.add(itemTag)) {
+            return false;
+        }
+
+        try {
+            var recipes = recipeCache.getAll(itemTag);
+
+            if (recipes.isEmpty()) {
+                return priceCache.getBuyPrice(itemTag) > 0;
+            }
+
+            for (RecipeCache.Recipe recipe : recipes) {
+                for (RecipeCache.Ingredient ingredient : recipe.getIngredients()) {
+                    if (!doIsFullyResolved(ingredient.getItemTag(), depth + 1, visiting)) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        } finally {
+            visiting.remove(itemTag);
+        }
+    }
+
     /**
      * Clear the memo cache (called on price refresh).
      */
     public void invalidate() {
         resultCache.clear();
+        resolutionCache.clear();
     }
 
     // -- result types --

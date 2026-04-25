@@ -20,11 +20,12 @@ The tooltip is intentionally conservative so it does not hammer your game or the
 
 ## Current behavior
 
-As of `craftcost 0.1.6`, the tooltip flow works like this:
+As of `craftcost 0.1.7`, the tooltip flow works like this:
 
 - No price checks happen immediately when you glance over an item.
 - You must hold the same SkyBlock item for 10 seconds before calculation starts.
 - After that, CraftCost queues the item and its ingredient tree for pricing, then processes requests slowly in the background.
+- For craftable items, the tooltip stays in a loading state until the full recursive recipe tree is resolved, so it does not flash partial or incorrect craft costs before settling.
 - Once the needed data is available, the tooltip can show:
   - `Lowest BIN` or `Bazaar Buy`
   - `Raw Craft Cost`
@@ -104,7 +105,7 @@ mod/build/libs/
 The current version in source is:
 
 ```text
-craftcost-0.1.6
+craftcost-0.1.7
 ```
 
 ## Installing the mod
