@@ -83,10 +83,10 @@ For the current mod build:
 
 Recommended:
 
-- a SkyBlock mod setup that registers SkyBlock recipes into REI
-- another SkyBlock mod that populates `skyblock-repo-cache` as a fallback
+- a SkyBlock mod setup that populates `skyblock-repo-cache`
+- REI enabled in the same profile so CraftCost can import client-side displays after REI reloads
 
-Without REI recipe displays, price lines can still work, but craft-cost calculations will be limited or unavailable unless the local repo fallback is present.
+Without a local repo cache, craft-cost coverage will be much weaker. Without REI, the mod can still work from the local repo cache baseline, but it loses the extra live recipe import pass after REI reloads.
 
 ## Building the mod
 
@@ -116,7 +116,8 @@ craftcost-1.0.6
 1. Build the jar or grab the latest built jar from `mod/build/libs/`.
 2. Put it in your Fabric profile's `mods` folder.
 3. Make sure the profile also has Fabric API.
-4. Install REI and use a SkyBlock mod setup that registers SkyBlock recipes into REI.
+4. Use a SkyBlock mod setup that maintains `skyblock-repo-cache`.
+5. Install REI as well if you want CraftCost to import the extra client-side recipe displays after REI reloads.
 
 ## Config
 
@@ -192,6 +193,13 @@ CraftCost now uses a hybrid recipe-source order:
 2. REI recipe displays after REI finishes reloading
 
 This gives the mod a reliable structured baseline without depending on REI timing, while still letting REI add live recipe displays once its client reload is complete.
+
+In practice, the best setup is:
+
+1. a SkyBlock profile that maintains `skyblock-repo-cache`
+2. REI present in the same profile
+
+That gives CraftCost both the stable structured baseline and the late REI augmentation pass.
 
 ## Release 1.0.6
 
