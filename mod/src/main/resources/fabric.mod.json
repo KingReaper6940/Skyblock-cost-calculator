@@ -1,0 +1,31 @@
+{
+    "schemaVersion": 1,
+    "id": "craftcost",
+    "version": "${version}",
+    "name": "CraftCost",
+    "description": "Shows raw craft cost vs lowest BIN in item tooltips for Hypixel SkyBlock. Price data provided by SkyCofl/Coflnet.",
+    "authors": ["KingReaper6940"],
+    "contact": {
+        "sources": "https://github.com/KingReaper6940/Skyblock-cost-calculator"
+    },
+    "license": "MIT",
+    "environment": "client",
+    "entrypoints": {
+        "client": [
+            "com.craftcost.CraftCostClient"
+        ],
+        "main": [
+            "com.craftcost.CraftCostMod"
+        ]
+    },
+    "mixins": [],
+    "depends": {
+        "fabricloader": ">=0.16.0",
+        "minecraft": "~1.21.1",
+        "java": ">=21",
+        "fabric-api": "*"
+    },
+    "suggests": {
+        "roughlyenoughitems": "*"
+    }
+}

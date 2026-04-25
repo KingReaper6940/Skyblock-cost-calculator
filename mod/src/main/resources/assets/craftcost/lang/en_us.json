@@ -1,0 +1,16 @@
+{
+    "craftcost.name": "CraftCost",
+    "craftcost.description": "Shows raw craft cost vs lowest BIN for SkyBlock items",
+    "craftcost.tooltip.lowest_bin": "Lowest BIN",
+    "craftcost.tooltip.craft_cost": "Raw Craft Cost",
+    "craftcost.tooltip.cheaper_craft": "Cheaper to craft!",
+    "craftcost.tooltip.cheaper_buy": "Cheaper to buy!",
+    "craftcost.tooltip.savings": "Save %s",
+    "craftcost.tooltip.loading": "Loading prices...",
+    "craftcost.tooltip.no_recipe": "No recipe found",
+    "craftcost.config.title": "CraftCost Configuration",
+    "craftcost.config.enabled": "Enabled",
+    "craftcost.config.refresh_interval": "Price Refresh Interval (seconds)",
+    "craftcost.config.show_breakdown": "Show Ingredient Breakdown",
+    "craftcost.config.show_savings": "Show Savings Hint"
+}

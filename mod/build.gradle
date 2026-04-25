@@ -1,0 +1,79 @@
+plugins {
+    id 'net.fabricmc.fabric-loom-remap' version "${loom_version}"
+    id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+    archivesName = project.archives_base_name
+}
+
+repositories {
+    // REI + Architectury
+    maven { url = 'https://maven.shedaniel.me/' }
+    maven { url = 'https://maven.architectury.dev/' }
+}
+
+loom {
+    // optional: accessWidenerPath = file("src/main/resources/craftcost.accesswidener")
+}
+
+dependencies {
+    // Minecraft + mappings
+    minecraft "com.mojang:minecraft:${project.minecraft_version}"
+    mappings loom.officialMojangMappings()
+
+    // Fabric loader + API
+    modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+    // Fabric API — individual modules (avoids fabric-rendering-v1 which breaks with Loom 1.16 on MC 1.21.1)
+    modImplementation(fabricApi.module("fabric-api-base", project.fabric_version))
+    modImplementation(fabricApi.module("fabric-item-api-v1", project.fabric_version))
+    modImplementation(fabricApi.module("fabric-lifecycle-events-v1", project.fabric_version))
+    modImplementation(fabricApi.module("fabric-key-binding-api-v1", project.fabric_version))
+
+    // REI — temporarily disabled for build testing
+    // modCompileOnly "me.shedaniel:RoughlyEnoughItems-api-fabric:${project.rei_version}"
+    // modRuntimeOnly "me.shedaniel:RoughlyEnoughItems-fabric:${project.rei_version}"
+
+    // Architectury (required by REI)
+    // modCompileOnly "dev.architectury:architectury-fabric:14.0.4"
+
+    // Cloth Config (required by REI)
+    // modCompileOnly "me.shedaniel.cloth:cloth-config-fabric:16.0.141"
+}
+
+processResources {
+    inputs.property "version", project.version
+
+    filesMatching("fabric.mod.json") {
+        expand "version": project.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    it.options.release = Integer.parseInt(project.java_version)
+}
+
+java {
+    sourceCompatibility = JavaVersion.toVersion(project.java_version)
+    targetCompatibility = JavaVersion.toVersion(project.java_version)
+
+    withSourcesJar()
+}
+
+jar {
+    from("LICENSE") {
+        rename { "${it}_${project.base.archivesName.get()}" }
+    }
+}
+
+publishing {
+    publications {
+        create("mavenJava", MavenPublication) {
+            artifactId = project.archives_base_name
+            from components.java
+        }
+    }
+}

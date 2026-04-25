@@ -1,0 +1,101 @@
+package com.craftcost.data;
+
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+/**
+ * Thread-safe recipe storage. Maps item tags to their recipe (ingredients list).
+ * Recipes are populated from REI's DisplayRegistry when available.
+ */
+public class RecipeCache {
+
+    private final ConcurrentHashMap<String, Recipe> cache = new ConcurrentHashMap<>();
+
+    public void put(String itemTag, Recipe recipe) {
+        cache.put(itemTag, recipe);
+    }
+
+    public Recipe get(String itemTag) {
+        return cache.get(itemTag);
+    }
+
+    public boolean has(String itemTag) {
+        return cache.containsKey(itemTag);
+    }
+
+    public int size() {
+        return cache.size();
+    }
+
+    public void clear() {
+        cache.clear();
+    }
+
+    public Set<String> collectIngredientTags(String itemTag, int maxDepth) {
+        Set<String> tags = ConcurrentHashMap.newKeySet();
+        collectIngredientTags(itemTag, maxDepth, tags, ConcurrentHashMap.newKeySet());
+        return tags;
+    }
+
+    private void collectIngredientTags(String itemTag, int depth, Set<String> tags, Set<String> visited) {
+        if (depth <= 0 || !visited.add(itemTag)) return;
+
+        Recipe recipe = get(itemTag);
+        if (recipe == null) return;
+
+        for (Ingredient ingredient : recipe.getIngredients()) {
+            String ingredientTag = ingredient.getItemTag();
+            tags.add(ingredientTag);
+            collectIngredientTags(ingredientTag, depth - 1, tags, visited);
+        }
+    }
+
+    /**
+     * Simple recipe representation.
+     */
+    public static class Recipe {
+        private final String outputTag;
+        private final int outputCount;
+        private final List<Ingredient> ingredients;
+
+        public Recipe(String outputTag, int outputCount, List<Ingredient> ingredients) {
+            this.outputTag = outputTag;
+            this.outputCount = outputCount;
+            this.ingredients = ingredients;
+        }
+
+        public String getOutputTag() {
+            return outputTag;
+        }
+
+        public int getOutputCount() {
+            return outputCount;
+        }
+
+        public List<Ingredient> getIngredients() {
+            return ingredients;
+        }
+    }
+
+    /**
+     * Single ingredient in a recipe.
+     */
+    public static class Ingredient {
+        private final String itemTag;
+        private final int count;
+
+        public Ingredient(String itemTag, int count) {
+            this.itemTag = itemTag;
+            this.count = count;
+        }
+
+        public String getItemTag() {
+            return itemTag;
+        }
+
+        public int getCount() {
+            return count;
+        }
+    }
+}

@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Gradle (mod/)
+mod/.gradle/
+mod/build/
+mod/.idea/
+mod/*.iml
+mod/run/
+mod/logs/
