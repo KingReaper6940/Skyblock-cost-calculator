@@ -4,15 +4,10 @@ import com.craftcost.CraftCostMod;
 import com.craftcost.config.CraftCostConfig;
 import com.craftcost.data.CraftCostEngine;
 import com.craftcost.data.PriceCache;
-import com.craftcost.data.PriceEntry;
 import com.craftcost.data.RecipeCache;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
@@ -128,37 +123,21 @@ public class PriceFetcher {
         }
         lastFetchAttempt.put(itemTag, System.currentTimeMillis());
 
-        // try BIN auctions first
-        CompletableFuture<Void> binFuture = client.getActiveBinAuctions(itemTag).thenAccept(auctions -> {
-            long lowestBin = Long.MAX_VALUE;
+        client.getCurrentPrice(itemTag)
+                .thenAccept(result -> {
+                    if (!result.hasPrice()) {
+                        return;
+                    }
 
-            for (JsonElement elem : auctions) {
-                JsonObject auction = elem.getAsJsonObject();
-                long bid = auction.get("startingBid").getAsLong();
-                if (bid < lowestBin) {
-                    lowestBin = bid;
-                }
-            }
-
-            if (lowestBin < Long.MAX_VALUE) {
-                if (cache.putBin(itemTag, lowestBin)) {
-                    craftCostEngine.invalidate();
-                }
-            }
-        });
-
-        // also try bazaar
-        CompletableFuture<Void> bazaarFuture = client.getBazaarPrice(itemTag).thenAccept(bazaar -> {
-            if (bazaar.has("buyPrice")) {
-                double buyPrice = bazaar.get("buyPrice").getAsDouble();
-                double sellPrice = bazaar.has("sellPrice") ? bazaar.get("sellPrice").getAsDouble() : 0;
-                if (cache.putBazaar(itemTag, buyPrice, sellPrice)) {
-                    craftCostEngine.invalidate();
-                }
-            }
-        });
-
-        CompletableFuture.allOf(binFuture, bazaarFuture)
-                .whenComplete((ignored, throwable) -> inFlightItems.remove(itemTag));
+                    if (cache.put(itemTag, result.price())) {
+                        craftCostEngine.invalidate();
+                    }
+                })
+                .whenComplete((ignored, throwable) -> {
+                    if (throwable != null) {
+                        CraftCostMod.LOGGER.debug("[CraftCost] Price fetch failed for {}", itemTag, throwable);
+                    }
+                    inFlightItems.remove(itemTag);
+                });
     }
 }

@@ -43,8 +43,6 @@ public class REICompat {
             return 0;
         }
 
-        CraftCostMod.LOGGER.info("[CraftCost] Loading recipes from REI...");
-
         try {
             Class<?> registryClass = Class.forName("me.shedaniel.rei.api.client.registry.display.DisplayRegistry");
             Class<?> displayClass = Class.forName("me.shedaniel.rei.api.common.display.Display");
@@ -86,7 +84,11 @@ public class REICompat {
                 }
             }
 
-            CraftCostMod.LOGGER.info("[CraftCost] Loaded {} recipes from REI", loaded);
+            if (loaded > 0) {
+                CraftCostMod.LOGGER.info("[CraftCost] Loaded {} recipes from REI", loaded);
+            } else {
+                CraftCostMod.LOGGER.debug("[CraftCost] REI did not expose any recipes yet");
+            }
             return loaded;
         } catch (ReflectiveOperationException | RuntimeException e) {
             permanentlyDisabled = true;

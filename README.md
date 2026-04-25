@@ -11,8 +11,8 @@ The mod is the main thing here.
 When you hover a SkyBlock item for long enough, the mod:
 
 1. identifies the SkyBlock item ID from its NBT,
-2. loads recipe data from the local `skyblock-repo-cache`,
-3. fetches current price data from Coflnet,
+2. reads recipe data from REI's loaded recipe displays,
+3. fetches current price data from SkyCofl / Coflnet,
 4. prices the immediate recipe ingredients using their market prices,
 5. shows the result directly in the tooltip.
 
@@ -20,7 +20,7 @@ The tooltip is intentionally conservative so it does not hammer your game or the
 
 ## Current behavior
 
-As of `craftcost 1.0.2`, the tooltip flow works like this:
+As of `craftcost 1.0.3`, the tooltip flow works like this:
 
 - No price checks happen immediately when you glance over an item.
 - You must hold the same SkyBlock item for 10 seconds before calculation starts.
@@ -38,23 +38,16 @@ Direct craft cost means CraftCost prices only one layer of ingredients. If an in
 
 ## How recipe loading works
 
-The mod does not depend entirely on REI anymore.
+CraftCost is back to REI-first recipe loading.
 
-Its primary recipe source is the local SkyBlock repo cache at:
+That is intentional. REI already receives the recipe displays from the SkyBlock mods in your profile, so using REI means CraftCost reads the same item stacks and SkyBlock IDs that you are actually seeing in-game. That is more reliable than shipping our own frozen recipe copy.
 
-```text
-<minecraft game dir>/skyblock-repo-cache/recipes.min.json
-```
+Startup recipe source order:
 
-That cache is usually created by other SkyBlock mods that sync repo data. In practice, the setup that has been tested most is a profile with mods such as Skyblocker, Firmament, Catharsis, or similar tooling that keeps the SkyBlock repo cache up to date.
+1. REI recipe displays
+2. local `skyblock-repo-cache/recipes.min.json`, only if REI exposes no recipes after repeated startup attempts
 
-CraftCost currently loads these recipe types from the local cache:
-
-- `crafting`
-- `forge`
-- `shop`
-
-REI support is still present as a fallback and compatibility layer, but it is treated as best-effort and should never be the thing that takes the client down.
+The local repo fallback is a safety net, not the normal path. CraftCost no longer ships a bundled recipe snapshot inside the jar.
 
 ## How price loading works
 
@@ -62,6 +55,9 @@ Price data comes from SkyCofl / Coflnet.
 
 To keep the mod light:
 
+- most items use Coflnet's compact current-price endpoint first,
+- if that misses, CraftCost tries Bazaar snapshot,
+- if Bazaar misses too, CraftCost tries active AH BIN,
 - requests are queued instead of fired immediately,
 - only hovered items are tracked,
 - the queue is capped,
@@ -71,6 +67,8 @@ To keep the mod light:
 
 This is why an item may briefly show `Calculating...` before the full craft result appears.
 
+Coflnet's public API is rate-limited, so CraftCost is deliberately paced. The documented free limits are 30 requests per 10 seconds and 100 requests per minute. A normal item price is usually one request now; fallback pricing can take more than one request only when the compact endpoint misses.
+
 ## Requirements
 
 For the current mod build:
@@ -79,13 +77,15 @@ For the current mod build:
 - Fabric Loader `0.18.5+`
 - Java `21`
 - Fabric API `0.141.3+1.21.11`
+- Roughly Enough Items `21.11.x`
+- internet access to `sky.coflnet.com`
 
 Recommended:
 
-- Roughly Enough Items (optional, but useful)
-- another SkyBlock mod that populates `skyblock-repo-cache`
+- a SkyBlock mod setup that registers SkyBlock recipes into REI
+- another SkyBlock mod that populates `skyblock-repo-cache` as a fallback
 
-Without a local SkyBlock recipe cache, price lines can still work, but craft-cost calculations will be limited or unavailable.
+Without REI recipe displays, price lines can still work, but craft-cost calculations will be limited or unavailable unless the local repo fallback is present.
 
 ## Building the mod
 
@@ -107,7 +107,7 @@ mod/build/libs/
 The current version in source is:
 
 ```text
-craftcost-1.0.2
+craftcost-1.0.3
 ```
 
 ## Installing the mod
@@ -115,7 +115,7 @@ craftcost-1.0.2
 1. Build the jar or grab the latest built jar from `mod/build/libs/`.
 2. Put it in your Fabric profile's `mods` folder.
 3. Make sure the profile also has Fabric API.
-4. For full craft-cost support, use a SkyBlock mod setup that maintains `skyblock-repo-cache`.
+4. Install REI and use a SkyBlock mod setup that registers SkyBlock recipes into REI.
 
 ## Config
 
@@ -152,7 +152,7 @@ Reason: Crafting saves 1.1M
 
 ## Known limitations
 
-- The local repo cache loader currently supports `crafting` and `forge` recipes, not every SkyBlock recipe type yet.
+- CraftCost depends on the recipes exposed by the user's current REI/SkyBlock mod setup.
 - Craft results depend on the direct ingredient prices that are available from the current cache/API state.
 - The 10-second hover delay is intentional and not a bug.
 
@@ -185,13 +185,26 @@ If the mod's tooltip flow, recipe sources, compatibility target, config format, 
 
 ## Recipe sources
 
-CraftCost now uses a reliability-first source order for recipes:
+CraftCost now uses an in-game-source-first order for recipes:
 
-1. a bundled normalized recipe snapshot shipped inside the mod jar
-2. the user's local `skyblock-repo-cache/recipes.min.json` when available
-3. REI as a last-resort fallback for missing items
+1. REI recipe displays
+2. the user's local `skyblock-repo-cache/recipes.min.json`, only if REI never produces recipes
 
-This means the mod no longer depends on REI or a local cache just to know basic recipe data. The local cache can still add newer or missing recipes on top of the bundled snapshot.
+This keeps recipe IDs tied to the actual item stacks in the running client. It also removes the stale bundled snapshot that caused wrong or confusing item IDs.
+
+## Release 1.0.3
+
+`1.0.3` is a recipe and pricing reliability hotfix.
+
+Main release points:
+
+- removed the bundled recipe snapshot
+- made REI the primary recipe source again
+- kept local repo recipes only as a late fallback
+- switched normal price lookups to Coflnet's compact current-price endpoint
+- fall back to Bazaar snapshot, then AH active BIN, only when needed
+- reduced noisy API warnings for expected misses
+- URL-encodes item tags before calling Coflnet
 
 ## Release 1.0.2
 
