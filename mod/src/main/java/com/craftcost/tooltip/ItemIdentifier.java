@@ -26,13 +26,13 @@ public class ItemIdentifier {
 
             // the item ID lives directly in the custom data
             if (nbt.contains("id")) {
-                return nbt.getString("id");
+                return nbt.getString("id").orElse(null);
             }
 
             if (nbt.contains("ExtraAttributes")) {
-                CompoundTag extraAttributes = nbt.getCompound("ExtraAttributes");
-                if (extraAttributes.contains("id")) {
-                    return extraAttributes.getString("id");
+                CompoundTag extraAttributes = nbt.getCompound("ExtraAttributes").orElse(null);
+                if (extraAttributes != null && extraAttributes.contains("id")) {
+                    return extraAttributes.getString("id").orElse(null);
                 }
             }
 

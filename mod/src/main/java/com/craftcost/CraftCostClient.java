@@ -28,6 +28,7 @@ public class CraftCostClient implements ClientModInitializer {
     private TooltipHandler tooltipHandler;
     private REICompat reiCompat;
     private int recipeLoadAttempts;
+    private int recipeLoadTicks;
 
     @Override
     public void onInitializeClient() {
@@ -52,7 +53,7 @@ public class CraftCostClient implements ClientModInitializer {
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> reiCompat.loadRecipes());
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (recipeCache.size() > 0 || recipeLoadAttempts >= 30 || !REICompat.isLoaded()) return;
-            if (client.level == null || client.level.getGameTime() % 20 != 0) return;
+            if (client.level == null || ++recipeLoadTicks % 20 != 0) return;
 
             recipeLoadAttempts++;
             reiCompat.loadRecipes();
