@@ -12,25 +12,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * REI (Roughly Enough Items) integration.
- * Reads crafting recipes from REI's DisplayRegistry to populate our RecipeCache.
- *
- * NOTE: This requires the player to have REI + a SkyBlock provider mod
- * (Skyblocker or Firmament) installed for SkyBlock recipes to be available.
- *
- * Uses reflection so CraftCost can still load when REI is not installed.
+ * REI integration that tries to read recipe displays without hard-linking the API.
+ * Any unreadable displays are skipped so the client never crashes on a bad REI shape.
  */
 public class REICompat {
 
     private final RecipeCache recipeCache;
+    private boolean permanentlyDisabled;
 
     public REICompat(RecipeCache recipeCache) {
         this.recipeCache = recipeCache;
     }
 
-    /**
-     * Check if REI is loaded.
-     */
     public static boolean isLoaded() {
         try {
             Class.forName("me.shedaniel.rei.api.client.REIRuntime");
@@ -40,20 +33,13 @@ public class REICompat {
         }
     }
 
-    /**
-     * Populate the recipe cache from REI's display registry.
-     * Called after the game has fully loaded and REI has initialized.
-     *
-     * - Get DisplayRegistry instance
-     * - Iterate all registered displays
-     * - Filter for crafting-type displays
-     * - Extract input/output items and counts
-     * - Map Minecraft item IDs to SkyBlock item IDs
-     * - Store in recipeCache
-     */
     public void loadRecipes() {
+        if (permanentlyDisabled) {
+            return;
+        }
+
         if (!isLoaded()) {
-            CraftCostMod.LOGGER.warn("[CraftCost] REI not found — recipe data unavailable");
+            CraftCostMod.LOGGER.warn("[CraftCost] REI not found - recipe data unavailable");
             return;
         }
 
@@ -70,18 +56,28 @@ public class REICompat {
             Method getAll = registryClass.getMethod("getAll");
             Method getInputEntries = displayClass.getMethod("getInputEntries");
             Method getOutputEntries = displayClass.getMethod("getOutputEntries");
-            Method getValue = entryStackClass.getMethod("getValue");
+            Method fallbackGetValue = entryStackClass.getMethod("getValue");
 
             Object registry = getInstance.invoke(null);
             Map<?, ?> displaysByCategory = (Map<?, ?>) getAll.invoke(registry);
 
             int loaded = 0;
             for (Object displays : displaysByCategory.values()) {
-                if (!(displays instanceof Iterable<?> iterable)) continue;
+                if (!(displays instanceof Iterable<?> iterable)) {
+                    continue;
+                }
 
                 for (Object display : iterable) {
-                    LoadedRecipe loadedRecipe = readDisplay(display, getInputEntries, getOutputEntries, getValue);
-                    if (loadedRecipe == null || loadedRecipe.ingredients().isEmpty()) continue;
+                    LoadedRecipe loadedRecipe;
+                    try {
+                        loadedRecipe = readDisplay(display, getInputEntries, getOutputEntries, fallbackGetValue);
+                    } catch (ReflectiveOperationException | RuntimeException e) {
+                        continue;
+                    }
+
+                    if (loadedRecipe == null || loadedRecipe.ingredients().isEmpty()) {
+                        continue;
+                    }
 
                     recipeCache.put(loadedRecipe.output().itemTag(), new RecipeCache.Recipe(
                             loadedRecipe.output().itemTag(),
@@ -93,26 +89,29 @@ public class REICompat {
             }
 
             CraftCostMod.LOGGER.info("[CraftCost] Loaded {} recipes from REI", loaded);
-            return;
-        } catch (ReflectiveOperationException | ClassCastException e) {
+        } catch (ReflectiveOperationException | RuntimeException e) {
+            permanentlyDisabled = true;
             CraftCostMod.LOGGER.error("[CraftCost] Failed to load recipes from REI", e);
         }
-
-        CraftCostMod.LOGGER.info("[CraftCost] Loaded {} recipes from REI", recipeCache.size());
     }
 
-    private LoadedRecipe readDisplay(Object display, Method getInputEntries, Method getOutputEntries, Method getValue)
+    private LoadedRecipe readDisplay(Object display, Method getInputEntries, Method getOutputEntries, Method fallbackGetValue)
             throws ReflectiveOperationException {
         List<?> outputs = (List<?>) getOutputEntries.invoke(display);
-        StackInfo output = firstStack(outputs, getValue);
-        if (output == null) return null;
+        StackInfo output = firstStack(outputs, fallbackGetValue);
+        if (output == null) {
+            return null;
+        }
 
         List<?> inputs = (List<?>) getInputEntries.invoke(display);
         Map<String, Integer> countsByItem = new LinkedHashMap<>();
 
         for (Object ingredient : inputs) {
-            StackInfo input = firstStack(ingredient, getValue);
-            if (input == null || input.itemTag().equals(output.itemTag())) continue;
+            StackInfo input = firstStack(ingredient, fallbackGetValue);
+            if (input == null || input.itemTag().equals(output.itemTag())) {
+                continue;
+            }
+
             countsByItem.merge(input.itemTag(), input.count(), Integer::sum);
         }
 
@@ -121,12 +120,22 @@ public class REICompat {
         return new LoadedRecipe(output, ingredients);
     }
 
-    private StackInfo firstStack(Object ingredient, Method getValue) throws ReflectiveOperationException {
-        if (!(ingredient instanceof Iterable<?> stacks)) return null;
+    private StackInfo firstStack(Object ingredient, Method fallbackGetValue) throws ReflectiveOperationException {
+        if (!(ingredient instanceof Iterable<?> stacks)) {
+            return null;
+        }
 
         for (Object entryStack : stacks) {
-            Object value = getValue.invoke(entryStack);
-            if (!(value instanceof ItemStack stack) || stack.isEmpty()) continue;
+            Object value;
+            try {
+                value = invokeEntryValue(entryStack, fallbackGetValue);
+            } catch (ReflectiveOperationException | RuntimeException e) {
+                continue;
+            }
+
+            if (!(value instanceof ItemStack stack) || stack.isEmpty()) {
+                continue;
+            }
 
             String itemTag = ItemIdentifier.getItemId(stack);
             if (itemTag != null) {
@@ -135,6 +144,19 @@ public class REICompat {
         }
 
         return null;
+    }
+
+    private Object invokeEntryValue(Object entryStack, Method fallbackGetValue) throws ReflectiveOperationException {
+        if (entryStack == null) {
+            return null;
+        }
+
+        if (fallbackGetValue.getDeclaringClass().isInstance(entryStack)) {
+            return fallbackGetValue.invoke(entryStack);
+        }
+
+        Method dynamicGetValue = entryStack.getClass().getMethod("getValue");
+        return dynamicGetValue.invoke(entryStack);
     }
 
     private record StackInfo(String itemTag, int count) {
