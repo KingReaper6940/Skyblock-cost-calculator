@@ -6,6 +6,7 @@ The mod is the main thing here.
 
 `CraftCost` adds a lightweight tooltip overlay in Hypixel SkyBlock that compares market price against the direct craft cost of an item. Instead of only telling you the lowest BIN, it can also show the raw craft cost and explain which option is better.
 
+the youtube video ; https://youtu.be/9MPIsVMRJKM
 ## What the mod does
 
 When you hover a SkyBlock item for long enough, the mod:
