@@ -1,6 +1,7 @@
 package com.craftcost.data;
 
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -10,14 +11,24 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class RecipeCache {
 
-    private final ConcurrentHashMap<String, Recipe> cache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, List<Recipe>> cache = new ConcurrentHashMap<>();
 
     public void put(String itemTag, Recipe recipe) {
-        cache.put(itemTag, recipe);
+        cache.compute(itemTag, (key, recipes) -> {
+            List<Recipe> next = recipes == null ? new ArrayList<>() : new ArrayList<>(recipes);
+            next.add(recipe);
+            return next;
+        });
     }
 
     public Recipe get(String itemTag) {
-        return cache.get(itemTag);
+        List<Recipe> recipes = cache.get(itemTag);
+        return recipes == null || recipes.isEmpty() ? null : recipes.getFirst();
+    }
+
+    public List<Recipe> getAll(String itemTag) {
+        List<Recipe> recipes = cache.get(itemTag);
+        return recipes == null ? List.of() : recipes;
     }
 
     public boolean has(String itemTag) {
@@ -41,13 +52,12 @@ public class RecipeCache {
     private void collectIngredientTags(String itemTag, int depth, Set<String> tags, Set<String> visited) {
         if (depth <= 0 || !visited.add(itemTag)) return;
 
-        Recipe recipe = get(itemTag);
-        if (recipe == null) return;
-
-        for (Ingredient ingredient : recipe.getIngredients()) {
-            String ingredientTag = ingredient.getItemTag();
-            tags.add(ingredientTag);
-            collectIngredientTags(ingredientTag, depth - 1, tags, visited);
+        for (Recipe recipe : getAll(itemTag)) {
+            for (Ingredient ingredient : recipe.getIngredients()) {
+                String ingredientTag = ingredient.getItemTag();
+                tags.add(ingredientTag);
+                collectIngredientTags(ingredientTag, depth - 1, tags, visited);
+            }
         }
     }
 
@@ -58,11 +68,17 @@ public class RecipeCache {
         private final String outputTag;
         private final int outputCount;
         private final List<Ingredient> ingredients;
+        private final double coinCost;
 
         public Recipe(String outputTag, int outputCount, List<Ingredient> ingredients) {
+            this(outputTag, outputCount, ingredients, 0);
+        }
+
+        public Recipe(String outputTag, int outputCount, List<Ingredient> ingredients, double coinCost) {
             this.outputTag = outputTag;
             this.outputCount = outputCount;
             this.ingredients = ingredients;
+            this.coinCost = coinCost;
         }
 
         public String getOutputTag() {
@@ -75,6 +91,10 @@ public class RecipeCache {
 
         public List<Ingredient> getIngredients() {
             return ingredients;
+        }
+
+        public double getCoinCost() {
+            return coinCost;
         }
     }
 

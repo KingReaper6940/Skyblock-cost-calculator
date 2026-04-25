@@ -46,8 +46,6 @@ public class REICompat {
         CraftCostMod.LOGGER.info("[CraftCost] Loading recipes from REI...");
 
         try {
-            recipeCache.clear();
-
             Class<?> registryClass = Class.forName("me.shedaniel.rei.api.client.registry.display.DisplayRegistry");
             Class<?> displayClass = Class.forName("me.shedaniel.rei.api.common.display.Display");
             Class<?> entryStackClass = Class.forName("me.shedaniel.rei.api.common.entry.EntryStack");

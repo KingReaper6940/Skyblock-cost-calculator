@@ -7,6 +7,7 @@ import com.craftcost.config.CraftCostConfig;
 import com.craftcost.data.CraftCostEngine;
 import com.craftcost.data.PriceCache;
 import com.craftcost.data.RecipeCache;
+import com.craftcost.data.RepoRecipeLoader;
 import com.craftcost.tooltip.TooltipHandler;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
@@ -27,6 +28,7 @@ public class CraftCostClient implements ClientModInitializer {
     private CraftCostEngine craftCostEngine;
     private TooltipHandler tooltipHandler;
     private REICompat reiCompat;
+    private RepoRecipeLoader repoRecipeLoader;
     private int recipeLoadAttempts;
     private int recipeLoadTicks;
 
@@ -48,6 +50,9 @@ public class CraftCostClient implements ClientModInitializer {
         // start background price fetcher
         priceFetcher = new PriceFetcher(coflnetClient, priceCache, config, craftCostEngine);
         priceFetcher.start();
+
+        repoRecipeLoader = new RepoRecipeLoader();
+        repoRecipeLoader.loadInto(recipeCache);
 
         reiCompat = new REICompat(recipeCache);
         ClientLifecycleEvents.CLIENT_STARTED.register(client -> reiCompat.loadRecipes());

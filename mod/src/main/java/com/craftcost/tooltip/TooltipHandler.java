@@ -85,10 +85,10 @@ public class TooltipHandler {
 
                 if (config.isShowSavings() && craft.hasBuyPrice()) {
                     if (cheaper) {
-                        lines.add(Component.literal("   §7§o-> §aCheaper to craft! Save §e" +
+                        lines.add(Component.literal("   §7Reason: §aCrafting saves §e" +
                                 NumberFormatter.format(craft.getSavings())));
                     } else if (craft.isCheaperToBuy()) {
-                        lines.add(Component.literal("   §7§o-> §6Cheaper to buy!"));
+                        lines.add(Component.literal("   §7Reason: §cCraft cost is higher, buy Lowest BIN"));
                     }
                 }
 
@@ -103,6 +103,8 @@ public class TooltipHandler {
                                 NumberFormatter.format(ing.getTotalCost())));
                     }
                 }
+            } else if (craft != null && craft.hasBuyPrice()) {
+                lines.add(Component.literal(" §7CraftCost: §8No known recipe data"));
             }
 
             lines.add(Component.literal("§8§m                    §r"));

@@ -48,57 +48,69 @@ public class CraftCostEngine {
         }
 
         double buyPrice = priceCache.getBuyPrice(itemTag);
-        RecipeCache.Recipe recipe = recipeCache.get(itemTag);
+        var recipes = recipeCache.getAll(itemTag);
 
-        // no recipe — can only buy
-        if (recipe == null) {
+        // no recipe - can only buy
+        if (recipes.isEmpty()) {
             if (buyPrice > 0) {
                 return CraftResult.buyOnly(itemTag, buyPrice);
             }
             return null; // no data at all
         }
 
-        // has recipe — calculate craft cost
-        double craftCost = 0;
-        boolean allIngredientsAvailable = true;
-        Map<String, IngredientCost> breakdown = new HashMap<>();
+        CraftResult bestCraft = null;
 
-        for (RecipeCache.Ingredient ingredient : recipe.getIngredients()) {
-            String ingTag = ingredient.getItemTag();
-            int count = ingredient.getCount();
+        for (RecipeCache.Recipe recipe : recipes) {
+            double craftCost = recipe.getCoinCost();
+            boolean allIngredientsAvailable = true;
+            Map<String, IngredientCost> breakdown = new HashMap<>();
 
-            // recursively find cheapest way to get this ingredient
-            CraftResult ingResult = doCalculate(ingTag, depth + 1);
-            double ingPrice;
+            for (RecipeCache.Ingredient ingredient : recipe.getIngredients()) {
+                String ingTag = ingredient.getItemTag();
+                int count = ingredient.getCount();
 
-            if (ingResult != null) {
-                ingPrice = ingResult.getCheapestPrice() * count;
-            } else {
-                double ingBuyPrice = priceCache.getBuyPrice(ingTag);
-                if (ingBuyPrice > 0) {
-                    ingPrice = ingBuyPrice * count;
+                // recursively find cheapest way to get this ingredient
+                CraftResult ingResult = doCalculate(ingTag, depth + 1);
+                double ingPrice;
+
+                if (ingResult != null) {
+                    ingPrice = ingResult.getCheapestPrice() * count;
                 } else {
-                    allIngredientsAvailable = false;
-                    break;
+                    double ingBuyPrice = priceCache.getBuyPrice(ingTag);
+                    if (ingBuyPrice > 0) {
+                        ingPrice = ingBuyPrice * count;
+                    } else {
+                        allIngredientsAvailable = false;
+                        break;
+                    }
                 }
+
+                craftCost += ingPrice;
+                breakdown.put(ingTag, new IngredientCost(ingTag, count, ingPrice));
             }
 
-            craftCost += ingPrice;
-            breakdown.put(ingTag, new IngredientCost(ingTag, count, ingPrice));
-        }
-
-        if (!allIngredientsAvailable) {
-            // can't calculate craft cost — just show buy price
-            if (buyPrice > 0) {
-                return CraftResult.buyOnly(itemTag, buyPrice);
+            if (!allIngredientsAvailable) {
+                continue;
             }
-            return null;
+
+            // divide by output count (some recipes produce multiple items)
+            craftCost = craftCost / recipe.getOutputCount();
+
+            CraftResult candidate = new CraftResult(itemTag, buyPrice, craftCost, breakdown);
+            if (bestCraft == null || candidate.getCraftCost() < bestCraft.getCraftCost()) {
+                bestCraft = candidate;
+            }
         }
 
-        // divide by output count (some recipes produce multiple items)
-        craftCost = craftCost / recipe.getOutputCount();
+        if (bestCraft != null) {
+            return bestCraft;
+        }
 
-        return new CraftResult(itemTag, buyPrice, craftCost, breakdown);
+        // can't calculate craft cost - just show buy price
+        if (buyPrice > 0) {
+            return CraftResult.buyOnly(itemTag, buyPrice);
+        }
+        return null;
     }
 
     /**
