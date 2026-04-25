@@ -28,6 +28,7 @@ public class TooltipHandler {
     private final CraftCostConfig config;
     private String hoveredItemId;
     private String requestedItemId;
+    private boolean requestedWithRecipeData;
     private long hoverStartedAt;
 
     public TooltipHandler(PriceCache priceCache, CraftCostEngine craftCostEngine, RecipeCache recipeCache,
@@ -129,6 +130,7 @@ public class TooltipHandler {
         if (!itemId.equals(hoveredItemId)) {
             hoveredItemId = itemId;
             requestedItemId = null;
+            requestedWithRecipeData = false;
             hoverStartedAt = now;
             return 0;
         }
@@ -158,15 +160,18 @@ public class TooltipHandler {
     private void resetHoverTimer() {
         hoveredItemId = null;
         requestedItemId = null;
+        requestedWithRecipeData = false;
         hoverStartedAt = 0L;
     }
 
     private void requestPricesForHover(String itemId) {
-        if (itemId.equals(requestedItemId)) {
+        boolean hasRecipeData = recipeCache.has(itemId);
+        if (itemId.equals(requestedItemId) && (!hasRecipeData || requestedWithRecipeData)) {
             return;
         }
 
         requestedItemId = itemId;
+        requestedWithRecipeData = hasRecipeData;
         priceFetcher.requestDirectPrices(itemId, recipeCache);
     }
 }

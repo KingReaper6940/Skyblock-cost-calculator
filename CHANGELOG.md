@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.1 - 2026-04-25
+
+Hotfix for tooltip resolution and stuck loading behavior.
+
+- treat an item as ready when any complete direct recipe is fully priced
+- re-request direct ingredient prices if recipe data appears after the first hover request
+
 ## 1.0.0 - 2026-04-25
 
 First release intended for GitHub and Modrinth publishing.

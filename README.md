@@ -20,7 +20,7 @@ The tooltip is intentionally conservative so it does not hammer your game or the
 
 ## Current behavior
 
-As of `craftcost 1.0.0`, the tooltip flow works like this:
+As of `craftcost 1.0.1`, the tooltip flow works like this:
 
 - No price checks happen immediately when you glance over an item.
 - You must hold the same SkyBlock item for 10 seconds before calculation starts.
@@ -107,7 +107,7 @@ mod/build/libs/
 The current version in source is:
 
 ```text
-craftcost-1.0.0
+craftcost-1.0.1
 ```
 
 ## Installing the mod
@@ -182,6 +182,15 @@ AGENTS.md                repo-specific instructions for coding agents
 This README is meant to track the real behavior of the project, not the ideal version in our heads.
 
 If the mod's tooltip flow, recipe sources, compatibility target, config format, or installation story changes, the README should be updated in the same change.
+
+## Release 1.0.1
+
+`1.0.1` is a hotfix release for tooltip resolution logic.
+
+Main release points:
+
+- the tooltip now considers an item ready when any complete direct recipe is priceable
+- hovered items can request ingredient pricing again if recipe data appears slightly later via fallback
 
 ## Release 1.0.0
 

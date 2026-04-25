@@ -121,14 +121,20 @@ public class CraftCostEngine {
         }
 
         for (RecipeCache.Recipe recipe : recipes) {
+            boolean recipeResolved = true;
             for (RecipeCache.Ingredient ingredient : recipe.getIngredients()) {
                 if (priceCache.getBuyPrice(ingredient.getItemTag()) <= 0) {
-                    return false;
+                    recipeResolved = false;
+                    break;
                 }
+            }
+
+            if (recipeResolved) {
+                return true;
             }
         }
 
-        return true;
+        return false;
     }
 
     /**
